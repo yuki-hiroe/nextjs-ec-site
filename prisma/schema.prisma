@@ -1,0 +1,312 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Prisma seed用の設定
+// package.jsonに "prisma": { "seed": "tsx prisma/seed.ts" } を追加する必要があります
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  // directUrlはSupabaseの接続プーラーを使用している場合に必要
+  // .envファイルにDIRECT_URLを設定してください（マイグレーション時のみ必要）
+  directUrl = env("DIRECT_URL")
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  price       String
+  tagline     String
+  description String
+  image       String
+  stock       Int      @default(0)
+  badges      Json     @default("[]") // JSON配列
+  features    Json     @default("[]") // JSON配列
+  specs       Json     @default("{}") // JSONオブジェクト
+  shipping    String
+  care        String
+  images      Json     @default("[]") // JSON配列
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  orderItems        OrderItem[]
+  relatedProducts   ProductRelation[] @relation("ProductRelations")
+  relatedToProducts ProductRelation[] @relation("RelatedProducts")
+
+  @@index([slug])
+  @@index([stock])
+}
+
+model ProductRelation {
+  id        String   @id @default(cuid())
+  productId String
+  relatedId String
+  product   Product  @relation("ProductRelations", fields: [productId], references: [id], onDelete: Cascade)
+  related   Product  @relation("RelatedProducts", fields: [relatedId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([productId, relatedId])
+  @@index([productId])
+  @@index([relatedId])
+}
+
+model Order {
+  id            String @id @default(cuid())
+  orderNumber   String @unique
+  total         Int // 合計金額（円）
+  shippingFee   Int    @default(0)
+  paymentMethod String
+  status        String @default("pending") // pending, confirmed, shipped, completed, cancelled
+
+  // ユーザー情報（ログイン済みの場合）
+  userId String?
+
+  // 配送先情報
+  lastName      String
+  firstName     String
+  lastNameKana  String
+  firstNameKana String
+  postalCode    String
+  prefecture    String
+  city          String
+  address       String
+  building      String?
+  phone         String
+  email         String
+  notes         String?
+
+  // 支払い情報（クレジットカードの場合）
+  cardLast4       String?
+  cardExpiryMonth String?
+  cardExpiryYear  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user  User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  items OrderItem[]
+
+  @@index([orderNumber])
+  @@index([email])
+  @@index([status])
+  @@index([userId])
+}
+
+model OrderItem {
+  id        String @id @default(cuid())
+  orderId   String
+  productId String
+  quantity  Int
+  price     String // 商品価格（注文時点）
+  name      String // 商品名（注文時点）
+
+  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model Stylist {
+  id          String   @id @default(cuid())
+  name        String
+  nameEn       String? // 英語名
+  bio          String  // 自己紹介
+  specialties  Json    @default("[]") // JSON配列: 専門分野
+  image        String? // プロフィール画像
+  email        String  @unique
+  password     String? // ハッシュ化されたパスワード（スタイリストログイン用）
+  isActive     Boolean @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  inquiries Inquiry[]
+
+  @@index([isActive])
+  @@index([email])
+}
+
+model StylistApplication {
+  id          String   @id @default(cuid())
+  name        String
+  nameEn      String?
+  bio         String
+  specialties Json     @default("[]") // JSON配列: 専門分野
+  image       String?
+  email       String
+  password    String?  // ハッシュ化されたパスワード（申請時に設定可能）
+  status      String   @default("pending") // pending, approved, rejected
+  notes       String?  // 管理者によるメモ
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([email])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Inquiry {
+  id          String   @id @default(cuid())
+  name        String
+  email       String
+  inquiryType String // styling, product, order, other
+  message     String
+  status      String   @default("new") // new, in_progress, resolved
+  
+  // ユーザー情報（ログイン済みの場合）
+  userId String?
+  
+  // スタイリスト情報（スタイリング相談の場合）
+  stylistId String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user     User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  stylist  Stylist?      @relation(fields: [stylistId], references: [id], onDelete: SetNull)
+  replies  InquiryReply[]
+
+  @@index([email])
+  @@index([status])
+  @@index([createdAt])
+  @@index([userId])
+  @@index([stylistId])
+}
+
+model InquiryReply {
+  id        String   @id @default(cuid())
+  inquiryId String
+  message   String   // 返信メッセージ
+  fromType  String   // "stylist" or "user" - 誰からの返信か
+  fromEmail String?  // 返信者のメールアドレス（スタイリストの場合）
+  fromName  String?  // 返信者の名前（スタイリストの場合）
+  isRead    Boolean  @default(false) // 既読フラグ
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  inquiry Inquiry @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+
+  @@index([inquiryId])
+  @@index([createdAt])
+  @@index([isRead])
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  password      String    // ハッシュ化されたパスワード
+  name          String
+  lastName      String?
+  firstName     String?
+  phone         String?
+  role          String    @default("user") // user, admin, stylist
+  image         String?
+  isSuspended   Boolean   @default(false) // アカウント一時停止フラグ
+  suspendedAt   DateTime? // 一時停止日時
+  suspendedReason String? // 一時停止理由
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  accounts              Account[]
+  sessions              Session[]
+  orders                Order[]
+  inquiries             Inquiry[]
+  newsletterSubscription NewsletterSubscription?
+
+  @@index([email])
+  @@index([role])
+  @@index([isSuspended])
+}
+
+// NextAuth用のテーブル
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider           String
+  providerAccountId String
+  refresh_token      String? @db.Text
+  access_token       String? @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String? @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token       String   @unique
+  expires     DateTime
+
+  @@unique([identifier, token])
+}
+
+// 監査ログ（管理者操作の記録）
+model AuditLog {
+  id              String   @id @default(cuid())
+  action          String   // 操作種別: delete, suspend, activate, update
+  targetType      String   // 対象タイプ: user, order, product, etc.
+  targetId        String   // 対象ID
+  targetEmail     String?  // 対象ユーザーのメールアドレス（検索用）
+  reason          String   // 操作理由（必須）
+  details         Json?    // 詳細情報（変更前後の値など）
+  performedBy     String   // 実行者ID（管理者のUser ID）
+  performedByEmail String  // 実行者メールアドレス（検索用）
+  ipAddress       String?  // IPアドレス
+  userAgent       String?  // User Agent
+  createdAt       DateTime @default(now())
+
+  @@index([action])
+  @@index([targetType])
+  @@index([targetId])
+  @@index([targetEmail])
+  @@index([performedBy])
+  @@index([performedByEmail])
+  @@index([createdAt])
+}
+
+// Newsletter購読者
+model NewsletterSubscription {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  userId    String?  @unique // ログインユーザーのID（オプショナル、1対1関係）
+  isActive  Boolean  @default(true) // 配信停止フラグ
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([email])
+  @@index([userId])
+  @@index([isActive])
+  @@index([createdAt])
+}

@@ -1,0 +1,270 @@
+import type { Metadata } from "next";
+import Image from "next/image";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import AddToCartButton from "@/components/AddToCartButton";
+import StockDisplay from "@/components/StockDisplay";
+import FavoriteButton from "@/components/FavoriteButton";
+import ProductImageGallery from "@/components/ProductImageGallery";
+
+type Product = {
+  id: string;
+  slug: string;
+  name: string;
+  price: string;
+  tagline: string;
+  description: string;
+  badges: string[];
+  features: string[];
+  specs: { label: string; value: string }[];
+  shipping: string;
+  care: string;
+  image: string;
+  images: string[];
+  stock: number;
+  relatedProducts?: Array<{
+    product?: {
+      id: string;
+      slug: string;
+      name: string;
+      price: string;
+      image: string;
+      tagline: string;
+      badges: string[];
+    };
+    related?: {
+      id: string;
+      slug: string;
+      name: string;
+      price: string;
+      image: string;
+      tagline: string;
+      badges: string[];
+    };
+  }>;
+};
+
+async function getProduct(slug: string): Promise<Product | null> {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+    const response = await fetch(`${baseUrl}/api/products/slug/${slug}`, {
+      cache: "no-store",
+    });
+    if (!response.ok) {
+      return null;
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("商品取得エラー:", error);
+    return null;
+  }
+}
+
+async function getAllProducts(): Promise<Array<{ slug: string }>> {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+    const response = await fetch(`${baseUrl}/api/products`, {
+      cache: "no-store",
+    });
+    if (!response.ok) {
+      return [];
+    }
+    const products = await response.json();
+    return products.map((p: any) => ({ slug: p.slug }));
+  } catch (error) {
+    console.error("商品一覧取得エラー:", error);
+    return [];
+  }
+}
+
+export async function generateStaticParams() {
+  const products = await getAllProducts();
+  return products.map((product) => ({ slug: product.slug }));
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const product = await getProduct(slug);
+  if (!product) {
+    return {
+      title: "商品詳細 | Intercambio",
+      description: "Intercambio で取り扱う商品の詳細ページです。",
+    };
+  }
+  return {
+    title: `${product.name} | Intercambio`,
+    description: product.tagline,
+  };
+}
+
+export default async function ProductDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const product = await getProduct(slug);
+
+  if (!product) {
+    notFound();
+  }
+
+  const relatedProducts = product.relatedProducts || [];
+
+  return (
+    <div className="space-y-10">
+      <nav className="text-sm text-slate-500">
+        <Link href="/" className="hover:text-slate-900">
+          Home
+        </Link>
+        <span className="mx-2">/</span>
+        <Link href="/products" className="hover:text-slate-900">
+          Products
+        </Link>
+        <span className="mx-2">/</span>
+        <span className="text-slate-900">{product.name}</span>
+      </nav>
+
+      <section className="grid gap-10 lg:grid-cols-2">
+        <ProductImageGallery
+          mainImage={product.image}
+          images={product.images || []}
+          productName={product.name}
+        />
+
+        <div className="space-y-6">
+          {product.badges && Array.isArray(product.badges) && product.badges.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.3em] text-slate-500">
+              {product.badges.map((badge) => (
+                <span key={badge} className="rounded-full border border-slate-300 px-3 py-1">
+                  {badge}
+                </span>
+              ))}
+            </div>
+          )}
+          <div>
+            <h1 className="text-3xl font-semibold text-slate-900">{product.name}</h1>
+            <p className="mt-2 text-slate-600">{product.tagline}</p>
+          </div>
+          <p className="text-2xl font-semibold text-slate-900">{product.price}</p>
+          <div className="flex items-center gap-2">
+            <StockDisplay productId={product.id} initialStock={product.stock} />
+          </div>
+          <p className="text-sm leading-relaxed text-slate-600">{product.description}</p>
+          <div className="flex flex-wrap gap-3">
+            <AddToCartButton
+              product={{
+                id: product.id,
+                name: product.name,
+                price: product.price,
+                image: product.image,
+                slug: product.slug,
+                stock: product.stock,
+              }}
+            />
+            <FavoriteButton
+              product={{
+                id: product.id,
+                name: product.name,
+                price: product.price,
+                image: product.image,
+                slug: product.slug,
+              }}
+            />
+          </div>
+          {product.features && Array.isArray(product.features) && product.features.length > 0 && (
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">特徴</h2>
+              <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-slate-600">
+                {product.features.map((feature) => (
+                  <li key={feature}>{feature}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="grid gap-6 lg:grid-cols-2">
+        {product.specs && Array.isArray(product.specs) && product.specs.length > 0 && (
+          <div className="rounded-3xl border border-slate-200 p-8">
+            <h3 className="text-lg font-semibold text-slate-900">仕様</h3>
+            <dl className="mt-4 divide-y divide-slate-100 text-sm text-slate-600">
+              {product.specs.map((spec) => (
+                <div key={spec.label} className="flex items-center justify-between py-3">
+                  <dt className="font-medium text-slate-500">{spec.label}</dt>
+                  <dd className="text-right text-slate-900">{spec.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        )}
+        <div className="space-y-6 rounded-3xl border border-slate-200 p-8">
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900">配送について</h3>
+            <p className="mt-2 text-sm text-slate-600">{product.shipping}</p>
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900">お手入れ</h3>
+            <p className="mt-2 text-sm text-slate-600">{product.care}</p>
+          </div>
+        </div>
+      </section>
+
+      {relatedProducts.length > 0 && (
+        <section className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm uppercase tracking-[0.3em] text-slate-500">Recommended</p>
+              <h3 className="text-2xl font-semibold text-slate-900">合わせて見られている商品</h3>
+            </div>
+            <Link href="/products" className="text-sm text-slate-500 hover:text-slate-900">
+              全商品を見る →
+            </Link>
+          </div>
+          <div className="grid gap-6 md:grid-cols-3">
+            {relatedProducts
+              .map((rel) => {
+                // rel.product または rel.related のどちらかを使用
+                const item = rel.product || rel.related;
+                // itemが存在し、必要なプロパティがあることを確認
+                if (!item || typeof item !== 'object' || !item.slug || !item.image || !item.name) {
+                  return null;
+                }
+                // imageが文字列であることを確認
+                if (typeof item.image !== 'string' || item.image.trim() === '') {
+                  return null;
+                }
+                return (
+                  <article
+                    key={item.slug}
+                    className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+                  >
+                    <div className="relative h-40 w-full overflow-hidden rounded-2xl bg-slate-100">
+                      <Image
+                        src={item.image}
+                        alt={item.name || "商品画像"}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, 33vw"
+                      />
+                    </div>
+                    {item.badges && Array.isArray(item.badges) && item.badges.length > 0 && (
+                      <p className="mt-4 text-xs uppercase tracking-[0.3em] text-slate-400">
+                        {item.badges[0]}
+                      </p>
+                    )}
+                    <h4 className="mt-2 text-lg font-semibold text-slate-900">{item.name}</h4>
+                    {item.tagline && (
+                      <p className="mt-1 text-sm text-slate-500">{item.tagline}</p>
+                    )}
+                    <p className="mt-3 text-sm font-semibold text-slate-900">{item.price}</p>
+                    <Link href={`/products/${item.slug}`} className="mt-3 inline-flex text-sm font-semibold text-slate-900 hover:underline">
+                      詳細を見る
+                    </Link>
+                  </article>
+                );
+              })
+              .filter(Boolean)}
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
