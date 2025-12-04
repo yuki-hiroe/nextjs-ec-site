@@ -96,23 +96,44 @@ const highlights = [
   "森林保全プロジェクトへの売上1%寄付",
 ];
 
-const testimonials = [
-  {
-    name: "Kana",
-    role: "UIデザイナー",
-    comment:
-      "質感が写真以上。チャットでサイズ相談できたので安心して購入できました。",
-  },
-  {
-    name: "Shun",
-    role: "Photographer",
-    comment:
-      "週末トリップ向けコレクションが便利。配送が早く、梱包も丁寧でした。",
-  },
-];
+type Testimonial = {
+  id: string;
+  name: string;
+  role: string | null;
+  comment: string;
+  createdAt: Date;
+};
+
+// データベースから承認済みのお客様の声を取得（最新2件のみ）
+async function getTestimonials(): Promise<Testimonial[]> {
+  try {
+    const testimonials = await prisma.testimonial.findMany({
+      where: {
+        isApproved: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        role: true,
+        comment: true,
+        createdAt: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: 2, // トップページには最新2件のみ表示
+    });
+
+    return testimonials;
+  } catch (error) {
+    console.error("お客様の声取得エラー:", error);
+    return [];
+  }
+}
 
 export default async function HomePage() {
   const featuredProducts = await getFeaturedProducts();
+  const testimonials = await getTestimonials();
 
   return (
     <div className="space-y-10">
@@ -242,18 +263,45 @@ export default async function HomePage() {
               Voices
             </p>
             <h2 className="mt-2 text-2xl font-semibold text-slate-900">お客様の声</h2>
-            <div className="mt-6 space-y-6">
-              {testimonials.map((testimonial) => (
-                <blockquote
-                  key={testimonial.name}
-                  className="rounded-2xl bg-slate-50 p-5 text-slate-700"
+            {testimonials.length > 0 ? (
+              <div className="mt-6 space-y-6">
+                {testimonials.map((testimonial) => (
+                  <blockquote
+                    key={testimonial.id}
+                    className="rounded-2xl bg-slate-50 p-5 text-slate-700"
+                  >
+                    <p className="text-sm leading-relaxed line-clamp-3">"{testimonial.comment}"</p>
+                    <footer className="mt-3 text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">
+                      {testimonial.name}{testimonial.role ? ` — ${testimonial.role}` : ""}
+                    </footer>
+                  </blockquote>
+                ))}
+              </div>
+            ) : (
+              <div className="mt-6 rounded-2xl bg-slate-50 p-8 text-center">
+                <p className="text-sm text-slate-600">まだお客様の声がありません</p>
+              </div>
+            )}
+            <div className="mt-8">
+              <Link
+                href="/testimonials"
+                className="inline-flex items-center text-sm font-semibold text-slate-900 hover:underline"
+              >
+                すべてのお客様の声を見る
+                <svg
+                  className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  <p className="text-sm leading-relaxed">“{testimonial.comment}”</p>
-                  <footer className="mt-3 text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">
-                    {testimonial.name} — {testimonial.role}
-                  </footer>
-                </blockquote>
-              ))}
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </Link>
             </div>
           </div>
           <div className="rounded-3xl bg-slate-500 p-6 sm:p-8 text-white">
@@ -266,7 +314,12 @@ export default async function HomePage() {
             <p className="mt-4 text-sm text-slate-200">
               週1回の編集レターで、新作アイデアやスタイリング提案を受け取れます。
             </p>
-            <NewsletterForm />
+            <div className="mt-6">
+              <NewsletterForm />
+            </div>
+            <p className="mt-4 text-xs text-slate-400">
+              いつでも配信停止できます。個人情報は厳重に管理します。
+            </p>
           </div>
         </section>
 

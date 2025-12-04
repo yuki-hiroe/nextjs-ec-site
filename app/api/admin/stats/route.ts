@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
-    const [products, orders, inquiries, stylists, pendingApplications] = await Promise.all([
+    const [products, orders, inquiries, stylists, pendingApplications, pendingTestimonials] = await Promise.all([
       prisma.product.count(),
       prisma.order.count(),
       prisma.inquiry.count(),
@@ -16,6 +16,10 @@ export async function GET() {
             where: { status: "pending" },
           })
         : Promise.resolve(0),
+      // 承認待ちのお客様の声数
+      prisma.testimonial.count({
+        where: { isApproved: false },
+      }),
     ]);
 
     return NextResponse.json({
@@ -24,6 +28,7 @@ export async function GET() {
       inquiries,
       stylists,
       pendingApplications,
+      pendingTestimonials,
     });
   } catch (error) {
     console.error("統計情報取得エラー:", error);

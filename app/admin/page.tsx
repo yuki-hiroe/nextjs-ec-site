@@ -13,6 +13,7 @@ export default function AdminDashboardPage() {
     inquiries: 0,
     stylists: 0,
     pendingApplications: 0,
+    pendingTestimonials: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -37,6 +38,7 @@ export default function AdminDashboardPage() {
             inquiries: data.inquiries ?? 0,
             stylists: data.stylists ?? 0,
             pendingApplications: data.pendingApplications ?? 0,
+            pendingTestimonials: data.pendingTestimonials ?? 0,
           });
         }
         setIsLoading(false);
@@ -161,6 +163,40 @@ export default function AdminDashboardPage() {
         </Link>
       </div>
 
+      {/* 追加の統計情報 */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <Link
+          href="/admin/testimonials"
+          className="rounded-3xl border border-slate-200 bg-white p-6 transition hover:shadow-lg relative"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-slate-600">お客様の声</p>
+              <p className="mt-2 text-3xl font-semibold text-slate-900">{stats.pendingTestimonials}</p>
+            </div>
+            <div className="rounded-full bg-slate-100 p-3">
+              <svg className="h-6 w-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                />
+              </svg>
+            </div>
+          </div>
+          {stats.pendingTestimonials > 0 && (
+            <div className="absolute top-4 right-4 flex items-center gap-2">
+              <span className="inline-flex h-2 w-2 rounded-full bg-amber-500 animate-ping opacity-75" />
+              <span className="inline-flex h-2 w-2 rounded-full bg-amber-500" />
+              <span className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
+                承認待ち {stats.pendingTestimonials}
+              </span>
+            </div>
+          )}
+        </Link>
+      </div>
+
       {/* クイックアクション */}
       <div className="rounded-3xl border border-slate-200 bg-white p-6">
         <h2 className="text-lg font-semibold text-slate-900">クイックアクション</h2>
@@ -227,6 +263,39 @@ export default function AdminDashboardPage() {
                 )}
               </p>
             </div>
+          </Link>
+
+          <Link
+            href="/admin/testimonials"
+            className="flex items-center gap-3 rounded-lg border border-slate-200 p-4 transition hover:border-slate-900 hover:bg-slate-50 relative"
+          >
+            <div className="rounded-full bg-slate-100 p-2">
+              <svg className="h-5 w-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <p className="font-medium text-slate-900">お客様の声管理</p>
+              <p className="text-sm text-slate-600">
+                お客様の声の承認・管理
+                {stats.pendingTestimonials > 0 && (
+                  <span className="ml-2 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
+                    承認待ち {stats.pendingTestimonials}
+                  </span>
+                )}
+              </p>
+            </div>
+            {stats.pendingTestimonials > 0 && (
+              <div className="absolute top-4 right-4 flex items-center gap-2">
+                <span className="inline-flex h-2 w-2 rounded-full bg-amber-500 animate-ping opacity-75" />
+                <span className="inline-flex h-2 w-2 rounded-full bg-amber-500" />
+              </div>
+            )}
           </Link>
 
           <Link
