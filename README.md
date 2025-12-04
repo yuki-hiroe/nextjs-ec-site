@@ -1,274 +1,155 @@
-# Intercambio
+# Next.js EC Site - スタイリスト相談機能付きECサイト
 
-日常を少し上質にするミニマルセレクトショップ
+お店とお客様を繋ぎ、スタイリストに相談できる機能を持ったECサイト
 
-国内外の独立ブランドからセレクトしたバッグ、フットウェア、テックアクセサリをオンラインでお届けする、モダンなECサイトです。
+## 🎯 プロジェクト概要
+
+単なる商品販売だけでなく、スタイリストへの相談機能やシーン別コレクションを通じて、
+ユーザー体験を重視したECサイトです。
+
+### 独自機能
+- **スタイリスト相談**: お客様が専門スタイリストに直接相談可能
+- **シーン別コレクション**: 使用シーンごとに商品を提案
+- **お客様の声**: レビュー・評価機能
+
+## 🛠️ 技術スタック
+
+| カテゴリ | 技術 |
+|---------|------|
+| **Framework** | Next.js 15 (App Router) |
+| **Language** | TypeScript |
+| **Styling** | Tailwind CSS |
+| **Database** | PostgreSQL (Supabase) |
+| **ORM** | Prisma |
+| **Authentication** | NextAuth.js |
+| **Password Hashing** | bcryptjs |
+| **Deployment** | Vercel (予定) |
 
 ## ✨ 主な機能
 
-### ユーザー向け機能
-- **商品閲覧・検索**: 豊富な商品ラインナップからお気に入りを見つけられます
-- **ショッピングカート**: 複数商品をまとめて購入
-- **お気に入り機能**: 気になる商品を保存
-- **注文管理**: 注文履歴の確認
-- **スタイリスト相談**: プロのスタイリストからのスタイリング提案
-- **お問い合わせ**: チャット形式でのサポート
-- **Newsletter購読**: 新作アイテムやスタイリング提案の最新情報を受け取れます
-- **シーン別コレクション**: AIが提案するコーディネートを見ることができます
+### お客様側
+- ✅ 商品一覧・詳細・検索
+- ✅ カート機能
+- ✅ 会員登録・ログイン（NextAuth.js）
+- ✅ 購入手続き
+- ✅ スタイリスト相談
+- ✅ メルマガ登録
+- ✅ シーン別コレクション閲覧
+- ✅ 注文履歴
 
-### スタイリスト向け機能
-- **スタイリストダッシュボード**: プロフィール管理
-- **お問い合わせ対応**: ユーザーからの相談に回答
-- **申請システム**: スタイリストとしての登録申請
+### 管理者側
+- ✅ 商品管理（登録・編集・削除）
+- ✅ スタイリスト管理
+- ✅ 注文管理
+- ✅ お問い合わせ確認
+- ✅ ログ管理
+- ✅ 注文管理機能
 
-### 管理者向け機能
-- **商品管理**: 商品の追加・編集・削除
-- **ユーザー管理**: ユーザーアカウントの管理（一時停止、削除など）
-- **注文管理**: 注文状況の確認・更新
-- **スタイリスト管理**: スタイリスト申請の承認・拒否
-- **お問い合わせ管理**: お問い合わせ履歴の確認
-- **統計ダッシュボード**: 売上、注文数、ユーザー数などの統計情報
-- **監査ログ**: 管理者操作の記録
+## 🔧 技術的な工夫
 
-## 🛠 技術スタック
+### セキュリティ
+- **NextAuth.js**による安全な認証（JWT, セッション管理）
+- **bcryptjs**によるパスワードハッシュ化（ソルトラウンド10）
+- **Prisma ORM**によるSQLインジェクション対策
+- **エラーメッセージの曖昧化**でブルートフォース攻撃を対策
+- クライアント・サーバー双方でのバリデーション
 
-- **フレームワーク**: Next.js 16 (App Router)
-- **言語**: TypeScript
-- **スタイリング**: Tailwind CSS 4
-- **データベース**: PostgreSQL (Supabase)
-- **ORM**: Prisma 5.22
-- **認証**: NextAuth.js
-- **パスワードハッシュ化**: bcryptjs
+### パフォーマンス
+- Next.js App Routerの活用
+- Server ComponentsとClient Componentsの適切な使い分け
+- Prismaによる型安全なDB操作とクエリ最適化
 
-## 📋 必要条件
-
-- Node.js 18.0 以上
-- npm, yarn, pnpm, または bun
-- PostgreSQL データベース（Supabase推奨）
+### 開発効率
+- AIツール（Cursor, GitHub Copilot, Claude）の積極活用
+- TypeScriptによる型安全性の確保
+- Prisma Studioによる直感的なデータ管理
+- 段階的な機能実装とテスト
 
 ## 🚀 セットアップ
 
-### 1. リポジトリのクローン
+### 必要な環境
+- Node.js 18以上
+- PostgreSQL（またはSupabaseアカウント）
 
+### インストール手順
 ```bash
-git clone <repository-url>
-cd intercambio
-```
+# 1. リポジトリをクローン
+git clone https://github.com/yuki-hiroe/nextjs-ec-site.git
+cd nextjs-ec-site
 
-### 2. 依存関係のインストール
-
-```bash
+# 2. 依存関係をインストール
 npm install
-# または
-yarn install
-# または
-pnpm install
+
+# 3. 環境変数を設定
+cp .env.example .env
+# .env ファイルを編集（DATABASE_URL, NEXTAUTH_SECRETなど）
+
+# 4. データベースのマイグレーション
+npx prisma migrate dev
+
+# 5. 開発サーバーを起動
+npm run dev
 ```
 
-### 3. 環境変数の設定
+ブラウザで http://localhost:3000 を開く
 
-プロジェクトルートに `.env` ファイルを作成し、以下の環境変数を設定してください：
-
+### 環境変数
 ```env
-# データベース接続（Supabaseの場合）
-DATABASE_URL="postgresql://user:password@host:5432/database?pgbouncer=true"
-DIRECT_URL="postgresql://user:password@host:5432/database"
+# Database
+DATABASE_URL="postgresql://postgres.xxmkatizftqbpenqesnn:watashihahiroedesu@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
 
-# NextAuth設定
+DIRECT_URL="postgresql://postgres.xxmkatizftqbpenqesnn:watashihahiroedesu@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres"
+
+# NextAuth
 NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="your-secret-key-here"
-
-# Next.js設定
-NEXT_PUBLIC_BASE_URL="http://localhost:3000"
+NEXTAUTH_SECRET=26TAUSh0o4dgbGK+mrU8LcaxLo7e6pwLH/6H0m0hfXs=
 ```
 
-#### 環境変数の説明
-
-- `DATABASE_URL`: 接続プーラーを使用する場合のデータベース接続URL（通常のアプリケーション動作用）
-- `DIRECT_URL`: マイグレーション実行時に必要な直接接続URL
-- `NEXTAUTH_URL`: NextAuthのベースURL（本番環境では実際のURLに変更）
-- `NEXTAUTH_SECRET`: NextAuthの秘密鍵（`openssl rand -base64 32`で生成可能）
-- `NEXT_PUBLIC_BASE_URL`: アプリケーションのベースURL
-
-### 4. データベースセットアップ
-
-#### Prisma Clientの生成
-
+NEXTAUTH_SECRETは以下のコマンドで生成:
 ```bash
-npm run db:generate
+openssl rand -base64 32
 ```
 
-#### データベースマイグレーション
+## 📝 開発経緯
 
-```bash
-npm run db:migrate
-```
+プログラミングスクールでの学習を実践で深めるため、
+フロントエンドからバックエンド、データベース、認証まで
+一貫した開発経験を積むことを目的に開発しました。
 
-または、スキーマを直接プッシュする場合：
+### 開発期間
+2024年11月〜現在進行中（約1ヶ月）
 
-```bash
-npm run db:push
-```
+### 開発プロセス
+1. **要件定義**: 一般的なECサイト機能に加え、独自の価値提案を検討
+2. **技術選定**: Next.js 15 (App Router), Prisma, NextAuth.jsを採用
+3. **DB設計**: Prismaでリレーションとインデックスを設計
+4. **段階的実装**: お客様側→管理者側→認証の順で実装
+5. **AIツール活用**: Cursorで効率化しつつ、コードは必ず理解・検証
 
-#### 初期データの投入（シード）
+### 学んだこと
+- Next.js App Routerの設計思想とSSR/CSRの使い分け
+- Prismaによる効率的なデータベース操作とマイグレーション管理
+- NextAuth.jsによる安全な認証実装とセキュリティベストプラクティス
+- AIツールを活用した開発効率化と学習効果の両立
+- TypeScriptの型システムを活かした堅牢なコード設計
 
-```bash
-npm run db:seed
-```
+## 🎯 今後の改善予定
 
-これにより、以下のデータが投入されます：
-- 10件の商品データ
-- 3件のスタイリストアカウント
-- 1件の管理者アカウント（メール: admin@example.com, パスワード: admin123）
+- [ ] 注文履歴表示機能（お客様側）
+- [ ] パフォーマンス最適化（画像最適化、キャッシング）
+- [ ] エラーハンドリングの強化
+- [ ] テストの実装（Jest, React Testing Library）
+- [ ] E2Eテスト（Playwright）
+- [ ] Vercelへのデプロイ
+- [ ] 技術ブログ記事の執筆（Qiita）
 
-### 5. 開発サーバーの起動
+## 👤 作者
 
-```bash
-npm run dev
-```
-
-ブラウザで [http://localhost:3000](http://localhost:3000) を開いてアプリケーションを確認できます。
-
-## 📁 プロジェクト構造
-
-```
-intercambio/
-├── app/                    # Next.js App Router
-│   ├── admin/             # 管理者画面
-│   │   ├── products/      # 商品管理
-│   │   ├── users/         # ユーザー管理
-│   │   ├── orders/        # 注文管理
-│   │   └── stylists/      # スタイリスト管理
-│   ├── api/               # API Routes
-│   ├── products/          # 商品ページ
-│   ├── collections/       # コレクションページ
-│   └── ...
-├── components/            # Reactコンポーネント
-├── contexts/              # React Context
-├── lib/                   # ユーティリティ関数
-├── prisma/               # Prisma設定
-│   ├── schema.prisma     # データベーススキーマ
-│   └── seed.ts           # シードデータ
-└── public/               # 静的ファイル
-```
-
-## 🎯 主要なスクリプト
-
-```bash
-# 開発サーバーの起動
-npm run dev
-
-# 本番用ビルド
-npm run build
-
-# 本番サーバーの起動
-npm start
-
-# リント
-npm run lint
-
-# Prisma Clientの生成
-npm run db:generate
-
-# データベースマイグレーション
-npm run db:migrate
-
-# スキーマを直接プッシュ
-npm run db:push
-
-# Prisma Studioの起動（データベースGUI）
-npm run db:studio
-
-# シードデータの投入
-npm run db:seed
-```
-
-## 👥 アカウントタイプ
-
-### 一般ユーザー
-- 商品の閲覧・購入
-- お気に入り機能
-- スタイリストへの相談
-- Newsletter購読
-
-### スタイリスト
-- プロフィール管理
-- ユーザーからの相談への回答
-- スタイリストダッシュボードへのアクセス
-
-### 管理者
-- すべての管理機能へのアクセス
-- 商品・ユーザー・注文の管理
-- スタイリスト申請の承認
-
-## 🔐 認証システム
-
-このアプリケーションでは、3種類の認証方式を使用しています：
-
-1. **NextAuth.js**: 一般ユーザーの認証（メールアドレス・パスワード）
-2. **スタイリスト認証**: localStorageベース（スタイリストログインページ）
-3. **管理者認証**: localStorageベース（管理者ログインページ）
-
-## 📊 データベーススキーマ
-
-主要なテーブル：
-- `User`: ユーザー情報
-- `Product`: 商品情報
-- `Order`: 注文情報
-- `Stylist`: スタイリスト情報
-- `Inquiry`: お問い合わせ情報
-- `NewsletterSubscription`: Newsletter購読者
-- `AuditLog`: 監査ログ
-
-詳細は `prisma/schema.prisma` を参照してください。
-
-## 🛒 注文フロー
-
-1. ユーザーが商品をカートに追加
-2. チェックアウトページで配送情報を入力
-3. 注文確定
-4. 管理者が注文を確認・処理
-5. 注文状況の更新
-
-## 📝 その他のドキュメント
-
-- [データ復元ガイド](./DATA_RESTORE_GUIDE.md): データが消えてしまった場合の復元方法
-- [マイグレーションガイド](./MIGRATION_GUIDE.md): Newsletter機能追加時のマイグレーション手順
-- [Prisma Studio 起動方法](./PRISMA_STUDIO_FIX_DETAILED.md): Prisma Studio起動時のトラブルシューティング
-
-## 🐛 トラブルシューティング
-
-### データベース接続エラー
-
-```
-Error: P1001: Can't reach database server
-```
-
-**解決方法**:
-1. `.env`ファイルの`DATABASE_URL`と`DIRECT_URL`が正しく設定されているか確認
-2. Supabaseのファイアウォール設定を確認
-3. ネットワーク接続を確認
-
-### Prisma Clientの生成エラー
-
-```bash
-npm run db:generate
-```
-
-を実行してPrisma Clientを再生成してください。
-
-### マイグレーションエラー
-
-接続プーラーを使用している場合、`DIRECT_URL`が設定されているか確認してください。
-
-## 🤝 コントリビューション
-
-プルリクエストを歓迎します。大きな変更を加える場合は、まず issue を開いて変更内容を議論してください。
+Yuki Hiroe
+- GitHub: [@yuki-hiroe](https://github.com/yuki-hiroe)
+- プログラミングスクール在学中
+- 2027年新卒入社を目指して就職活動中
 
 ## 📄 ライセンス
 
-このプロジェクトはプライベートプロジェクトです。
-
-## 📧 お問い合わせ
-
-プロジェクトに関する質問やサポートが必要な場合は、管理者に連絡してください。
+MIT License

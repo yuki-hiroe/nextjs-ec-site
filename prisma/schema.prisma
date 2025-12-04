@@ -9,10 +9,8 @@ generator client {
 // package.jsonに "prisma": { "seed": "tsx prisma/seed.ts" } を追加する必要があります
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-  // directUrlはSupabaseの接続プーラーを使用している場合に必要
-  // .envファイルにDIRECT_URLを設定してください（マイグレーション時のみ必要）
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
