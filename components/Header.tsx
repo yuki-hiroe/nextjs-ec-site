@@ -166,7 +166,7 @@ export default function Header() {
           )}
           {isAuthenticated || stylist ? (
             <>
-              {isAuthenticated && !isAdminDashboard && (
+              {isAuthenticated && !isAdminDashboard && !isStylistDashboard && (
             <>
               <span className="text-slate-400">|</span>
                   <Link href="/inquiries" className="relative text-slate-600 hover:text-slate-900">
@@ -188,7 +188,7 @@ export default function Header() {
               </Link>
                 </>
               )}
-              {stylist && (
+              {stylist && !isStylistDashboard && (
                 <>
                   <Link href="/stylist" className="text-slate-600 hover:text-slate-900">
                     スタイリストダッシュボード
@@ -320,7 +320,7 @@ export default function Header() {
                   <div className="px-4 py-3 text-sm text-slate-900 font-medium">
                     {stylist ? `${stylist.name}さん` : `${user?.name}さん`}
                   </div>
-                  {isAuthenticated && !isAdminDashboard && (
+                  {isAuthenticated && !isAdminDashboard && !isStylistDashboard && (
                     <>
                       <Link
                         href="/inquiries"
@@ -351,7 +351,7 @@ export default function Header() {
                       </Link>
                     </>
                   )}
-                  {stylist && (
+                  {stylist && !isStylistDashboard && (
                     <Link
                       href="/stylist"
                     onClick={handleLinkClick}
