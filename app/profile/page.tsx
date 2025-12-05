@@ -1,51 +1,54 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 type Stylist = {
   id: string;
   name: string;
-  nameEn?: string;
+  nameEn: string | null;
+  image: string | null;
   bio: string;
   specialties: string[];
-  image?: string;
-  email: string;
-  averageRating?: number | null;
-  ratingCount?: number;
+  averageRating: number;
+  ratingCount: number;
 };
 
-export default function StylistsPage() {
+export default function ProfilePage() {
+  const { data: session, status } = useSession();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [stylists, setStylists] = useState<Stylist[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const selectedStylistId = searchParams.get("select");
 
   useEffect(() => {
-    // スタイリスト一覧を取得
-    fetch("/api/stylists")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && !data.error) {
-          setStylists(data);
-        }
-        setIsLoading(false);
-      })
-      .catch((error) => {
-        console.error("スタイリスト取得エラー:", error);
-        setIsLoading(false);
-      });
-  }, []);
+    if (status === "unauthenticated") {
+      router.push("/login");
+      return;
+    }
 
-  const handleSelectStylist = (stylistId: string) => {
-    // スタイリストを選択してcontactページに遷移
-    router.push(`/contact?stylistId=${stylistId}&inquiryType=styling`);
+    if (status === "authenticated" && session?.user?.id) {
+      fetchStylists();
+    }
+  }, [session, status, router]);
+
+  const fetchStylists = async () => {
+    try {
+      const response = await fetch("/api/users/stylists");
+      if (response.ok) {
+        const data = await response.json();
+        setStylists(data);
+      }
+    } catch (error) {
+      console.error("スタイリスト取得エラー:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  if (isLoading) {
+  if (status === "loading" || isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
@@ -55,38 +58,45 @@ export default function StylistsPage() {
     );
   }
 
+  if (!session?.user) {
+    return null;
+  }
+
   return (
     <div className="space-y-10">
-      <nav className="mb-6 text-sm text-slate-500">
+      <nav className="text-sm text-slate-500">
         <Link href="/" className="hover:text-slate-900">
           Home
         </Link>
         <span className="mx-2">/</span>
-        <span className="text-slate-900">Stylists</span>
+        <span className="text-slate-900">マイページ</span>
       </nav>
 
       <div>
-        <p className="text-sm uppercase tracking-[0.3em] text-slate-500">Stylists</p>
-        <h1 className="mt-2 text-3xl font-semibold text-slate-900">スタイリストを選ぶ</h1>
+        <p className="text-sm uppercase tracking-[0.3em] text-slate-500">Profile</p>
+        <h1 className="mt-2 text-3xl font-semibold text-slate-900">マイページ</h1>
         <p className="mt-3 text-slate-600">
-          お客様に合ったコーディネートを無料でご提案いたします。お気に入りのスタイリストを選んで、ご相談ください。
+          あなたが相談したスタイリスト一覧を確認できます
         </p>
       </div>
 
-      {stylists.length === 0 ? (
-        <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center">
-          <p className="text-slate-600">スタイリストが見つかりませんでした。</p>
-        </div>
-      ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {stylists.map((stylist) => (
-            <div
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {stylists.length === 0 ? (
+          <div className="col-span-full rounded-3xl border border-slate-200 bg-white p-12 text-center">
+            <p className="text-slate-600">まだ相談したスタイリストがありません</p>
+            <Link
+              href="/stylists"
+              className="mt-4 inline-block text-sm font-semibold text-slate-900 hover:underline"
+            >
+              スタイリストを探す
+            </Link>
+          </div>
+        ) : (
+          stylists.map((stylist) => (
+            <Link
               key={stylist.id}
-              className={`group rounded-3xl border p-6 transition hover:-translate-y-1 hover:shadow-lg ${
-                selectedStylistId === stylist.id
-                  ? "border-slate-900 bg-slate-50"
-                  : "border-slate-200 bg-white"
-              }`}
+              href={`/stylists/${stylist.id}`}
+              className="group rounded-3xl border border-slate-200 bg-white p-6 transition hover:-translate-y-1 hover:shadow-lg"
             >
               <div className="flex items-start gap-4">
                 {stylist.image && stylist.image.trim() !== "" && stylist.image.startsWith("http") ? (
@@ -97,7 +107,6 @@ export default function StylistsPage() {
                       fill
                       className="object-cover"
                       sizes="80px"
-                      unoptimized={!stylist.image.includes("images.unsplash.com")}
                     />
                   </div>
                 ) : (
@@ -106,27 +115,20 @@ export default function StylistsPage() {
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <Link
-                    href={`/stylists/${stylist.id}`}
-                    className="text-lg font-semibold text-slate-900 hover:text-slate-600 hover:underline transition"
-                  >
+                  <h3 className="text-lg font-semibold text-slate-900 group-hover:text-slate-600 transition">
                     {stylist.name || "スタイリスト"}
-                  </Link>
+                  </h3>
                   {stylist.nameEn && stylist.nameEn.trim() !== "" && (
                     <p className="mt-1 text-sm text-slate-500">{stylist.nameEn}</p>
                   )}
-                  {stylist.averageRating !== null && 
-                   stylist.averageRating !== undefined && 
-                   stylist.averageRating > 0 && 
-                   stylist.ratingCount !== undefined && 
-                   stylist.ratingCount > 0 && (
+                  {stylist.averageRating > 0 && (
                     <div className="mt-2 flex items-center gap-2">
                       <div className="flex items-center">
                         {[1, 2, 3, 4, 5].map((star) => (
                           <svg
                             key={star}
                             className={`h-4 w-4 ${
-                              star <= Math.round(stylist.averageRating || 0)
+                              star <= Math.round(stylist.averageRating)
                                 ? "text-amber-400"
                                 : "text-slate-300"
                             }`}
@@ -148,36 +150,26 @@ export default function StylistsPage() {
                   <p className="mt-2 line-clamp-2 text-sm text-slate-600">{stylist.bio || ""}</p>
                   {Array.isArray(stylist.specialties) && stylist.specialties.length > 0 && (
                     <div className="mt-3 flex flex-wrap gap-2">
-                      {stylist.specialties.map((specialty, index) => (
+                      {stylist.specialties.slice(0, 2).map((specialty, index) => (
                         <span
                           key={index}
-                          className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-700"
+                          className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-700"
                         >
                           {specialty}
                         </span>
                       ))}
+                      {stylist.specialties.length > 2 && (
+                        <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-700">
+                          +{stylist.specialties.length - 2}
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>
               </div>
-              <button
-                onClick={() => handleSelectStylist(stylist.id)}
-                className="mt-6 w-full rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
-              >
-                このスタイリストに相談する
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 text-center">
-        <p className="text-sm text-slate-600">
-          スタイリストを選ばずに相談したい場合は、
-          <Link href="/contact" className="text-slate-900 underline hover:no-underline">
-            こちらからお問い合わせください
-          </Link>
-        </p>
+            </Link>
+          ))
+        )}
       </div>
     </div>
   );

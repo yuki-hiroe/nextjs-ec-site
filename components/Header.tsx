@@ -148,26 +148,27 @@ export default function Header() {
             Intercambio
           </h1>
         ) : (
-          <Link href="/" className="text-lg font-semibold tracking-[0.3em] uppercase">
-            <h1>Intercambio</h1>
-          </Link>
+        <Link href="/" className="text-lg font-semibold tracking-[0.3em] uppercase">
+          <h1>Intercambio</h1>
+        </Link>
         )}
         
         {/* デスクトップナビゲーション */}
         <nav className="hidden md:flex items-center gap-5 text-sm text-slate-600">
           {!isRestrictedPage && (
             <>
-              <Link href="/products"><em>Products</em></Link>
-              <Link href="/favorites"><em>Favorites</em></Link>
-              <Link href="/cart"><em>Cart</em></Link>
-              <Link href="/contact"><em>Contact</em></Link>
+          <Link href="/products"><em>Products</em></Link>
+          <Link href="/stylists"><em>Stylists</em></Link>
+          <Link href="/favorites"><em>Favorites</em></Link>
+          <Link href="/cart"><em>Cart</em></Link>
+          <Link href="/contact"><em>Contact</em></Link>
             </>
           )}
           {isAuthenticated || stylist ? (
             <>
               {isAuthenticated && !isAdminDashboard && (
-                <>
-                  <span className="text-slate-400">|</span>
+            <>
+              <span className="text-slate-400">|</span>
                   <Link href="/inquiries" className="relative text-slate-600 hover:text-slate-900">
                     {unreadCount > 0 && (
                         <span className="relative ml-2 inline-flex items-center">
@@ -180,8 +181,11 @@ export default function Header() {
                           </span>
                         </span>
                     )}
-                    お問い合わせ履歴
-                  </Link>
+                お問い合わせ履歴
+              </Link>
+              <Link href="/profile" className="text-slate-600 hover:text-slate-900">
+                マイページ
+              </Link>
                 </>
               )}
               {stylist && (
@@ -219,11 +223,11 @@ export default function Header() {
 
         {/* ハンバーガーメニューボタン（モバイル）- スタイリストダッシュボード・管理者画面では表示しない */}
         {!isRestrictedPage && (
-          <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="md:hidden p-2 text-slate-600 hover:text-slate-900 focus:outline-none"
-            aria-label="メニューを開く"
-          >
+        <button
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+          className="md:hidden p-2 text-slate-600 hover:text-slate-900 focus:outline-none"
+          aria-label="メニューを開く"
+        >
           {isMenuOpen ? (
             <svg
               className="h-6 w-6"
@@ -253,7 +257,7 @@ export default function Header() {
               />
             </svg>
           )}
-          </button>
+        </button>
         )}
       </div>
 
@@ -271,36 +275,43 @@ export default function Header() {
             <div className="px-4 py-4 space-y-1">
               {!isRestrictedPage && (
                 <>
-                  <Link
-                    href="/products"
-                    onClick={handleLinkClick}
-                    className="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition"
-                  >
-                    <em>Products</em>
-                  </Link>
-                  <Link
-                    href="/favorites"
-                    onClick={handleLinkClick}
-                    className="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition"
-                  >
-                    <em>Favorites</em>
-                  </Link>
-                  <Link
-                    href="/cart"
-                    onClick={handleLinkClick}
-                    className="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition"
-                  >
-                    <em>Cart</em>
-                  </Link>
-                  <Link
-                    href="/contact"
-                    onClick={handleLinkClick}
-                    className="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition"
-                  >
-                    <em>Contact</em>
-                  </Link>
-                  
-                  <div className="border-t border-slate-200 my-2" />
+              <Link
+                href="/products"
+                onClick={handleLinkClick}
+                className="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition"
+              >
+                <em>Products</em>
+              </Link>
+              <Link
+                href="/stylists"
+                onClick={handleLinkClick}
+                className="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition"
+              >
+                <em>Stylists</em>
+              </Link>
+              <Link
+                href="/favorites"
+                onClick={handleLinkClick}
+                className="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition"
+              >
+                <em>Favorites</em>
+              </Link>
+              <Link
+                href="/cart"
+                onClick={handleLinkClick}
+                className="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition"
+              >
+                <em>Cart</em>
+              </Link>
+              <Link
+                href="/contact"
+                onClick={handleLinkClick}
+                className="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition"
+              >
+                <em>Contact</em>
+              </Link>
+              
+              <div className="border-t border-slate-200 my-2" />
                 </>
               )}
               
@@ -310,35 +321,44 @@ export default function Header() {
                     {stylist ? `${stylist.name}さん` : `${user?.name}さん`}
                   </div>
                   {isAuthenticated && !isAdminDashboard && (
-                    <Link
-                      href="/inquiries"
-                      onClick={handleLinkClick}
-                      className="relative block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition"
-                    >
-                      <span className="flex items-center justify-between">
-                        <span>お問い合わせ履歴</span>
-                        {unreadCount > 0 && (
-                          <span className="relative inline-flex items-center ml-2">
-                            <span className="absolute -top-1 -right-1 flex h-2 w-2">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-600 opacity-75"></span>
-                              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span>
+                    <>
+                      <Link
+                        href="/inquiries"
+                        onClick={handleLinkClick}
+                        className="relative block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition"
+                      >
+                        <span className="flex items-center justify-between">
+                          <span>お問い合わせ履歴</span>
+                          {unreadCount > 0 && (
+                            <span className="relative inline-flex items-center ml-2">
+                              <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-600 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span>
+                              </span>
+                              <span className="ml-3 inline-flex items-center justify-center rounded-full bg-blue-600 px-2 py-0.5 text-xs font-semibold text-white min-w-[1.25rem]">
+                                {unreadCount > 99 ? "99+" : unreadCount}
+                              </span>
                             </span>
-                            <span className="ml-3 inline-flex items-center justify-center rounded-full bg-blue-600 px-2 py-0.5 text-xs font-semibold text-white min-w-[1.25rem]">
-                              {unreadCount > 99 ? "99+" : unreadCount}
-                            </span>
-                          </span>
-                        )}
-                      </span>
-                    </Link>
+                          )}
+                        </span>
+                      </Link>
+                      <Link
+                        href="/profile"
+                        onClick={handleLinkClick}
+                        className="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition"
+                      >
+                        マイページ
+                      </Link>
+                    </>
                   )}
                   {stylist && (
                     <Link
                       href="/stylist"
-                      onClick={handleLinkClick}
-                      className="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition"
-                    >
+                    onClick={handleLinkClick}
+                    className="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition"
+                  >
                       スタイリストダッシュボード
-                    </Link>
+                  </Link>
                   )}
                   <button
                     onClick={handleLogout}

@@ -17,17 +17,44 @@ export async function GET(request: Request) {
       },
     });
 
-    // specialtiesを確実に配列として返す
-    const formattedStylists = stylists.map((stylist) => ({
-      ...stylist,
-      specialties: Array.isArray(stylist.specialties)
-        ? stylist.specialties
-        : typeof stylist.specialties === "string"
-        ? JSON.parse(stylist.specialties)
-        : [],
-    }));
+    // 各スタイリストの評価データを取得
+    const stylistsWithRatings = await Promise.all(
+      stylists.map(async (stylist) => {
+        let averageRating: number | null = null;
+        let ratingCount = 0;
 
-    return NextResponse.json(formattedStylists);
+        // 評価データを取得
+        if (prisma.stylistRating) {
+          try {
+            const avgRating = await prisma.stylistRating.aggregate({
+              where: { stylistId: stylist.id },
+              _avg: { rating: true },
+              _count: { id: true },
+            });
+            ratingCount = avgRating._count.id || 0;
+            // 評価件数が0より大きい場合のみ平均評価を設定
+            if (ratingCount > 0 && avgRating._avg.rating !== null) {
+              averageRating = avgRating._avg.rating;
+            }
+          } catch (error) {
+            console.error(`スタイリスト ${stylist.id} の評価データ取得エラー:`, error);
+          }
+        }
+
+        return {
+          ...stylist,
+          specialties: Array.isArray(stylist.specialties)
+            ? stylist.specialties
+            : typeof stylist.specialties === "string"
+            ? JSON.parse(stylist.specialties)
+            : [],
+          averageRating,
+          ratingCount,
+        };
+      })
+    );
+
+    return NextResponse.json(stylistsWithRatings);
   } catch (error) {
     console.error("スタイリスト取得エラー:", error);
     return NextResponse.json(

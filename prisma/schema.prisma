@@ -126,7 +126,8 @@ model Stylist {
   updatedAt    DateTime @updatedAt
 
   // Relations
-  inquiries Inquiry[]
+  inquiries      Inquiry[]
+  ratings        StylistRating[]
 
   @@index([isActive])
   @@index([email])
@@ -172,6 +173,7 @@ model Inquiry {
   user     User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
   stylist  Stylist?      @relation(fields: [stylistId], references: [id], onDelete: SetNull)
   replies  InquiryReply[]
+  ratings  StylistRating[]
 
   @@index([email])
   @@index([status])
@@ -223,6 +225,7 @@ model User {
   inquiries             Inquiry[]
   newsletterSubscription NewsletterSubscription?
   testimonials          Testimonial[]
+  stylistRatings        StylistRating[]
 
   @@index([email])
   @@index([role])
@@ -327,5 +330,28 @@ model Testimonial {
 
   @@index([userId])
   @@index([isApproved])
+  @@index([createdAt])
+}
+
+// スタイリスト評価
+model StylistRating {
+  id        String   @id @default(cuid())
+  stylistId String
+  userId    String   // 評価したユーザーのID
+  rating    Int      // 評価（1-5）
+  comment   String?  @db.Text // コメント（任意）
+  inquiryId String?  // 関連するお問い合わせID（任意）
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  stylist Stylist @relation(fields: [stylistId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  inquiry Inquiry? @relation(fields: [inquiryId], references: [id], onDelete: SetNull)
+
+  @@unique([stylistId, userId]) // 1ユーザーは1スタイリストに対して1回のみ評価可能
+  @@index([stylistId])
+  @@index([userId])
+  @@index([rating])
   @@index([createdAt])
 }

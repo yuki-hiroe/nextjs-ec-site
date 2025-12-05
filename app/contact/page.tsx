@@ -195,7 +195,12 @@ export default function ContactPage() {
                       <div className="rounded-lg border border-slate-300 bg-slate-50 p-4">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="font-medium text-slate-900">{selectedStylist.name}</p>
+                            <Link
+                              href={`/stylists/${selectedStylist.id}`}
+                              className="font-medium text-slate-900 hover:text-slate-600 hover:underline transition"
+                            >
+                              {selectedStylist.name}
+                            </Link>
                             {selectedStylist.nameEn && (
                               <p className="text-sm text-slate-500">{selectedStylist.nameEn}</p>
                             )}

@@ -331,12 +331,12 @@ export default function StylistDashboardPage() {
               <span>未読返信</span>
             </Link>
           )}
-          <button
-            onClick={handleLogout}
-            className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:border-slate-900"
-          >
-            ログアウト
-          </button>
+        <button
+          onClick={handleLogout}
+          className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:border-slate-900"
+        >
+          ログアウト
+        </button>
         </div>
       </div>
 
@@ -430,17 +430,17 @@ export default function StylistDashboardPage() {
               </div>
             </div>
 
-            <div>
-              <label htmlFor="edit-nameEn" className="block text-sm font-medium text-slate-700 mb-2">
-                英語名
-              </label>
-              <input
-                id="edit-nameEn"
-                type="text"
-                value={editFormData.nameEn}
-                onChange={(e) => setEditFormData((prev) => ({ ...prev, nameEn: e.target.value }))}
-                className="w-full rounded-lg border border-slate-300 px-4 py-2 text-sm focus:border-slate-900 focus:outline-none"
-              />
+              <div>
+                <label htmlFor="edit-nameEn" className="block text-sm font-medium text-slate-700 mb-2">
+                  英語名
+                </label>
+                <input
+                  id="edit-nameEn"
+                  type="text"
+                  value={editFormData.nameEn}
+                  onChange={(e) => setEditFormData((prev) => ({ ...prev, nameEn: e.target.value }))}
+                  className="w-full rounded-lg border border-slate-300 px-4 py-2 text-sm focus:border-slate-900 focus:outline-none"
+                />
             </div>
 
             <div>
@@ -537,7 +537,7 @@ export default function StylistDashboardPage() {
       {/* お問い合わせ一覧 */}
       <div id="inquiries" className="rounded-3xl border border-slate-200 bg-white p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-slate-900">お問い合わせ一覧</h2>
+        <h2 className="text-lg font-semibold text-slate-900">お問い合わせ一覧</h2>
           {unreadCount > 0 && (
             <span className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-3 py-1 text-sm font-semibold text-blue-800">
               <span className="relative inline-flex items-center">
@@ -562,18 +562,32 @@ export default function StylistDashboardPage() {
             {inquiries.map((inquiry) => (
               <div
                 key={inquiry.id}
-                className="rounded-lg border border-slate-200 p-4"
+                className={`rounded-lg border p-4 transition ${
+                  inquiry.status === "new"
+                    ? "border-blue-300 bg-blue-50"
+                    : inquiry.status === "in_progress"
+                    ? "border-yellow-300 bg-yellow-50"
+                    : "border-slate-200 bg-white"
+                }`}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-3">
+                      {inquiry.status === "new" && (
+                        <span className="relative inline-flex items-center">
+                          <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-600 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span>
+                          </span>
+                        </span>
+                      )}
                       <p className="font-medium text-slate-900">{inquiry.name}</p>
                       <span
                         className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
                           inquiry.status === "new"
-                            ? "bg-blue-100 text-blue-800"
+                            ? "bg-blue-600 text-white"
                             : inquiry.status === "in_progress"
-                            ? "bg-yellow-100 text-yellow-800"
+                            ? "bg-yellow-500 text-white"
                             : "bg-emerald-100 text-emerald-800"
                         }`}
                       >
@@ -665,9 +679,9 @@ export default function StylistDashboardPage() {
                           >
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center gap-2">
-                                <p className="text-xs font-medium text-slate-700">
-                                  {reply.fromType === "stylist" ? "あなた" : reply.fromName || inquiry.name}
-                                </p>
+                              <p className="text-xs font-medium text-slate-700">
+                                {reply.fromType === "stylist" ? "あなた" : reply.fromName || inquiry.name}
+                              </p>
                                 {reply.fromType === "user" && (
                                   <span className="inline-flex rounded-full bg-blue-600 px-2 py-0.5 text-xs font-semibold text-white">
                                     ユーザーからの返信
@@ -686,33 +700,33 @@ export default function StylistDashboardPage() {
 
                     {/* 返信フォーム（完了していない場合のみ表示） */}
                     {inquiry.status !== "resolved" && (
-                      <div>
-                        <h4 className="text-sm font-semibold text-slate-900 mb-2">返信を送信</h4>
-                        <textarea
-                          value={replyMessages[inquiry.id] || ""}
-                          onChange={(e) =>
-                            setReplyMessages((prev) => ({
-                              ...prev,
-                              [inquiry.id]: e.target.value,
-                            }))
-                          }
-                          rows={4}
-                          className="w-full rounded-lg border border-slate-300 px-4 py-2 text-sm focus:border-slate-900 focus:outline-none"
-                          placeholder="返信メッセージを入力してください"
-                        />
-                        <div className="mt-2 flex items-center justify-between">
-                          <p className="text-xs text-slate-500">
-                            返信は {inquiry.email} に送信されます
-                          </p>
-                          <button
-                            onClick={() => handleReply(inquiry.id, inquiry.email)}
-                            disabled={isReplying[inquiry.id] || !replyMessages[inquiry.id]?.trim()}
-                            className="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {isReplying[inquiry.id] ? "送信中..." : "返信を送信"}
-                          </button>
-                        </div>
+                    <div>
+                      <h4 className="text-sm font-semibold text-slate-900 mb-2">返信を送信</h4>
+                      <textarea
+                        value={replyMessages[inquiry.id] || ""}
+                        onChange={(e) =>
+                          setReplyMessages((prev) => ({
+                            ...prev,
+                            [inquiry.id]: e.target.value,
+                          }))
+                        }
+                        rows={4}
+                        className="w-full rounded-lg border border-slate-300 px-4 py-2 text-sm focus:border-slate-900 focus:outline-none"
+                        placeholder="返信メッセージを入力してください"
+                      />
+                      <div className="mt-2 flex items-center justify-between">
+                        <p className="text-xs text-slate-500">
+                          返信は {inquiry.email} に送信されます
+                        </p>
+                        <button
+                          onClick={() => handleReply(inquiry.id, inquiry.email)}
+                          disabled={isReplying[inquiry.id] || !replyMessages[inquiry.id]?.trim()}
+                          className="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isReplying[inquiry.id] ? "送信中..." : "返信を送信"}
+                        </button>
                       </div>
+                    </div>
                     )}
 
                     {/* 完了済みメッセージ */}

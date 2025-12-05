@@ -110,7 +110,7 @@ async function getTestimonials(): Promise<Testimonial[]> {
     const testimonials = await prisma.testimonial.findMany({
       where: {
         isApproved: true,
-      },
+  },
       select: {
         id: true,
         name: true,
@@ -184,21 +184,21 @@ export default async function HomePage() {
             </Link>
           </div>
           {featuredProducts.length > 0 ? (
-            <div className="mt-6 flex snap-x snap-mandatory gap-6 overflow-x-auto scroll-smooth">
-              {featuredProducts.map((product) => (
-                <article
-                  key={product.id}
-                  className="min-w-[280px] snap-center rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
-                >
-                  <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-slate-100">
-                    <Image
-                      src={product.image}
-                      alt={product.name}
-                      fill
-                      className="object-cover transition-transform group-hover:scale-105"
-                      sizes="(max-width: 640px) 100vw, 280px"
-                    />
-                  </div>
+          <div className="mt-6 flex snap-x snap-mandatory gap-6 overflow-x-auto scroll-smooth">
+            {featuredProducts.map((product) => (
+              <article
+                key={product.id}
+                className="min-w-[280px] snap-center rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+              >
+                <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-slate-100">
+                  <Image
+                    src={product.image}
+                    alt={product.name}
+                    fill
+                    className="object-cover transition-transform group-hover:scale-105"
+                    sizes="(max-width: 640px) 100vw, 280px"
+                  />
+                </div>
                   <div className="mt-4 flex items-center justify-between gap-2">
                     <div className="flex flex-wrap gap-1">
                       {product.badges && product.badges.length > 0 && (
@@ -208,20 +208,20 @@ export default async function HomePage() {
                       )}
                     </div>
                     <span className="text-xs font-semibold text-slate-900">{product.price}</span>
-                  </div>
-                  <h3 className="mt-4 text-xl font-semibold text-slate-900">
-                    {product.name}
-                  </h3>
+                </div>
+                <h3 className="mt-4 text-xl font-semibold text-slate-900">
+                  {product.name}
+                </h3>
                   <p className="mt-3 text-sm text-slate-500">{product.tagline || ""}</p>
-                  <Link
-                    href={`/products/${product.slug}`}
-                    className="mt-6 inline-flex items-center text-sm font-semibold text-slate-900 hover:underline"
-                  >
-                    詳細を見る
-                  </Link>
-                </article>
-              ))}
-            </div>
+                <Link
+                  href={`/products/${product.slug}`}
+                  className="mt-6 inline-flex items-center text-sm font-semibold text-slate-900 hover:underline"
+                >
+                  詳細を見る
+                </Link>
+              </article>
+            ))}
+          </div>
           ) : (
             <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center">
               <p className="text-slate-600">商品を読み込んでいます...</p>
@@ -264,18 +264,18 @@ export default async function HomePage() {
             </p>
             <h2 className="mt-2 text-2xl font-semibold text-slate-900">お客様の声</h2>
             {testimonials.length > 0 ? (
-              <div className="mt-6 space-y-6">
-                {testimonials.map((testimonial) => (
-                  <blockquote
+            <div className="mt-6 space-y-6">
+              {testimonials.map((testimonial) => (
+                <blockquote
                     key={testimonial.id}
-                    className="rounded-2xl bg-slate-50 p-5 text-slate-700"
-                  >
+                  className="rounded-2xl bg-slate-50 p-5 text-slate-700"
+                >
                     <p className="text-sm leading-relaxed line-clamp-3">"{testimonial.comment}"</p>
-                    <footer className="mt-3 text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">
+                  <footer className="mt-3 text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">
                       {testimonial.name}{testimonial.role ? ` — ${testimonial.role}` : ""}
-                    </footer>
-                  </blockquote>
-                ))}
+                  </footer>
+                </blockquote>
+              ))}
               </div>
             ) : (
               <div className="mt-6 rounded-2xl bg-slate-50 p-8 text-center">

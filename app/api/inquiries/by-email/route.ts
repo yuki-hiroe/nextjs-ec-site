@@ -29,11 +29,22 @@ export async function GET(request: Request) {
             image: true,
           },
         },
+        ratings: {
+          select: {
+            id: true,
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json(inquiries);
+    // 評価済みかどうかを判定
+    const inquiriesWithRatingStatus = inquiries.map((inquiry) => ({
+      ...inquiry,
+      hasRating: inquiry.ratings && inquiry.ratings.length > 0,
+    }));
+
+    return NextResponse.json(inquiriesWithRatingStatus);
   } catch (error) {
     console.error("お問い合わせ取得エラー:", error);
     return NextResponse.json(

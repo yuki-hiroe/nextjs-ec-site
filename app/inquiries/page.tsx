@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import StylistRatingForm from "@/components/StylistRatingForm";
 
 type Reply = {
   id: string;
@@ -30,6 +32,7 @@ type Inquiry = {
     nameEn: string | null;
     image: string | null;
   } | null;
+  hasRating?: boolean;
 };
 
 export default function InquiriesPage() {
@@ -42,6 +45,10 @@ export default function InquiriesPage() {
   const [expandedInquiry, setExpandedInquiry] = useState<string | null>(null);
   const [replyMessages, setReplyMessages] = useState<Record<string, string>>({});
   const [isReplying, setIsReplying] = useState<Record<string, boolean>>({});
+  
+  // 既知の返信IDを記録
+  const knownReplyIdsRef = useRef<Set<string>>(new Set());
+  const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (user?.email) {
@@ -66,6 +73,86 @@ export default function InquiriesPage() {
       setIsLoading(false);
     }
   };
+
+  // 新しい返信を定期的にチェック
+  useEffect(() => {
+    if (!email || !user?.email) return;
+
+    // 初期化: 既存の返信IDを記録
+    const initializeKnownReplies = async () => {
+      try {
+        const response = await fetch(`/api/inquiries/by-email?email=${encodeURIComponent(email)}`);
+        const data = await response.json();
+        if (data && !data.error) {
+          // すべての既存返信IDを記録
+          data.forEach((inquiry: Inquiry) => {
+            inquiry.replies.forEach((reply: Reply) => {
+              knownReplyIdsRef.current.add(reply.id);
+            });
+          });
+          // 既知の返信IDを記録（デバッグログは削除）
+        }
+      } catch (error) {
+        console.error("初期化エラー:", error);
+      }
+    };
+
+    initializeKnownReplies();
+
+    const checkNewReplies = async () => {
+      try {
+        const response = await fetch(`/api/inquiries/by-email?email=${encodeURIComponent(email)}`);
+        const data = await response.json();
+        if (data && !data.error) {
+          // 新しい返信（スタイリストからの未読返信）を探す
+          const newReplies: Array<{ inquiryId: string; replyId: string }> = [];
+          
+          data.forEach((inquiry: Inquiry) => {
+            inquiry.replies.forEach((reply: Reply) => {
+              // 未読で、スタイリストからの返信で、まだ知らない返信IDの場合
+              if (
+                !reply.isRead &&
+                reply.fromType === "stylist" &&
+                !knownReplyIdsRef.current.has(reply.id)
+              ) {
+                newReplies.push({
+                  inquiryId: inquiry.id,
+                  replyId: reply.id,
+                });
+              }
+            });
+          });
+
+          // 新しい返信がある場合、返信IDを記録して一覧を更新
+          if (newReplies.length > 0) {
+            // 新しい返信IDを記録
+            newReplies.forEach((item) => {
+              knownReplyIdsRef.current.add(item.replyId);
+            });
+            
+            // お問い合わせ一覧を更新
+            setInquiries(data);
+          }
+        }
+      } catch (error) {
+        console.error("新しい返信チェックエラー:", error);
+      }
+    };
+
+    // 初回は少し待ってから開始（ページ読み込み完了後）
+    const initialDelay = setTimeout(() => {
+      // 5秒ごとにチェック
+      checkIntervalRef.current = setInterval(checkNewReplies, 5000);
+      // ポーリング開始（デバッグログは削除）
+    }, 3000);
+
+    return () => {
+      clearTimeout(initialDelay);
+      if (checkIntervalRef.current) {
+        clearInterval(checkIntervalRef.current);
+      }
+    };
+  }, [email, user]);
 
   const handleEmailSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -181,263 +268,291 @@ export default function InquiriesPage() {
 
   return (
     <div className="space-y-10">
-      <nav className="mb-6 text-sm text-slate-500">
-        <Link href="/" className="hover:text-slate-900">
-          Home
-        </Link>
-        <span className="mx-2">/</span>
-        <span className="text-slate-900">お問い合わせ履歴</span>
-      </nav>
+        <nav className="mb-6 text-sm text-slate-500">
+          <Link href="/" className="hover:text-slate-900">
+            Home
+          </Link>
+          <span className="mx-2">/</span>
+          <span className="text-slate-900">お問い合わせ履歴</span>
+        </nav>
 
-      <div>
-        <p className="text-sm uppercase tracking-[0.3em] text-slate-500">Inquiries</p>
-        <h1 className="mt-2 text-3xl font-semibold text-slate-900">お問い合わせ履歴</h1>
-        <p className="mt-3 text-slate-600">
-          お問い合わせとスタイリストからの返信を確認できます
-        </p>
-      </div>
-
-      {/* メールアドレス入力フォーム（ログインしていない場合） */}
-      {!user && (
-        <div className="rounded-3xl border border-slate-200 bg-white p-6">
-          <h2 className="text-lg font-semibold text-slate-900 mb-4">メールアドレスで確認</h2>
-          <form onSubmit={handleEmailSubmit} className="flex gap-4">
-            <input
-              type="email"
-              value={emailInput}
-              onChange={(e) => setEmailInput(e.target.value)}
-              placeholder="お問い合わせ時に使用したメールアドレス"
-              required
-              className="flex-1 rounded-lg border border-slate-300 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none"
-            />
-            <button
-              type="submit"
-              className="rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
-            >
-              確認
-            </button>
-          </form>
+        <div>
+          <p className="text-sm uppercase tracking-[0.3em] text-slate-500">Inquiries</p>
+          <h1 className="mt-2 text-3xl font-semibold text-slate-900">お問い合わせ履歴</h1>
+          <p className="mt-3 text-slate-600">
+            お問い合わせとスタイリストからの返信を確認できます
+          </p>
         </div>
-      )}
 
-      {/* 未読返信通知 */}
-      {unreadCount > 0 && (
-        <div className="rounded-3xl border border-blue-200 bg-blue-50 p-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-white text-sm font-semibold">
-              {unreadCount}
-            </div>
-            <div>
-              <p className="font-semibold text-blue-900">新しい返信があります</p>
-              <p className="text-sm text-blue-700">
-                スタイリストから {unreadCount} 件の未読返信があります
-              </p>
+        {/* メールアドレス入力フォーム（ログインしていない場合） */}
+        {!user && (
+          <div className="rounded-3xl border border-slate-200 bg-white p-6">
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">メールアドレスで確認</h2>
+            <form onSubmit={handleEmailSubmit} className="flex gap-4">
+              <input
+                type="email"
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
+                placeholder="お問い合わせ時に使用したメールアドレス"
+                required
+                className="flex-1 rounded-lg border border-slate-300 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none"
+              />
+              <button
+                type="submit"
+                className="rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+              >
+                確認
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* 未読返信通知 */}
+        {unreadCount > 0 && (
+          <div className="rounded-3xl border border-blue-200 bg-blue-50 p-6">
+            <div className="flex items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-white text-sm font-semibold">
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </div>
+              <div>
+                <p className="font-semibold text-blue-900">新しい返信があります</p>
+                <p className="text-sm text-blue-700">
+                  スタイリストから {unreadCount} 件の未読返信があります
+                </p>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* お問い合わせ一覧 */}
-      {email && (
-        <div className="rounded-3xl border border-slate-200 bg-white p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-slate-900">お問い合わせ一覧</h2>
-            {email && (
-              <p className="text-sm text-slate-600">{email}</p>
-            )}
-          </div>
-
-          {inquiries.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-slate-600">お問い合わせが見つかりませんでした</p>
+        {/* お問い合わせ一覧 */}
+        {email && (
+          <div className="rounded-3xl border border-slate-200 bg-white p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-slate-900">お問い合わせ一覧</h2>
+              {email && (
+                <p className="text-sm text-slate-600">{email}</p>
+              )}
             </div>
-          ) : (
-            <div className="space-y-4">
-              {inquiries.map((inquiry) => {
-                const unreadReplies = inquiry.replies.filter(
-                  (reply) => !reply.isRead && reply.fromType === "stylist"
-                ).length;
 
-                return (
-                  <div
-                    key={inquiry.id}
-                    className={`rounded-lg border p-4 ${
-                      unreadReplies > 0
-                        ? "border-blue-300 bg-blue-50"
-                        : "border-slate-200 bg-white"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3">
-                          <p className="font-medium text-slate-900">{inquiry.name}</p>
-                          {/* 未読返信がある場合のマーク */}
-                          {unreadReplies > 0 && (
-                            <span className="relative inline-flex items-center">
-                              <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-600 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-600"></span>
+            {inquiries.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-slate-600">お問い合わせが見つかりませんでした</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {inquiries.map((inquiry) => {
+                  const unreadReplies = inquiry.replies.filter(
+                    (reply) => !reply.isRead && reply.fromType === "stylist"
+                  ).length;
+
+                  return (
+                    <div
+                      id={`inquiry-${inquiry.id}`}
+                      key={inquiry.id}
+                      className={`rounded-lg border p-4 ${
+                        unreadReplies > 0
+                          ? "border-blue-300 bg-blue-50"
+                          : "border-slate-200 bg-white"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3">
+                            <p className="font-medium text-slate-900">{inquiry.name}</p>
+                            {/* 未読返信がある場合のマーク */}
+                            {unreadReplies > 0 && (
+                              <span className="relative inline-flex items-center">
+                                <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-600 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-600"></span>
+                                </span>
+                                <span className="inline-flex items-center gap-1 rounded-full bg-blue-600 px-2 py-1 text-xs font-semibold text-white">
+                                  {unreadReplies}件の未読返信
+                                </span>
                               </span>
-                              <span className="inline-flex items-center gap-1 rounded-full bg-blue-600 px-2 py-1 text-xs font-semibold text-white">
-                                {unreadReplies}件の未読返信
-                              </span>
-                            </span>
-                          )}
-                          <span
-                            className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
-                              inquiry.status === "new"
-                                ? "bg-blue-100 text-blue-800"
+                            )}
+                            <span
+                              className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
+                                inquiry.status === "new"
+                                  ? "bg-blue-100 text-blue-800"
+                                  : inquiry.status === "in_progress"
+                                  ? "bg-yellow-100 text-yellow-800"
+                                  : "bg-emerald-100 text-emerald-800"
+                              }`}
+                            >
+                              {inquiry.status === "new"
+                                ? "新規"
                                 : inquiry.status === "in_progress"
-                                ? "bg-yellow-100 text-yellow-800"
-                                : "bg-emerald-100 text-emerald-800"
-                            }`}
-                          >
-                            {inquiry.status === "new"
-                              ? "新規"
-                              : inquiry.status === "in_progress"
-                              ? "対応中"
-                              : "完了"}
-                          </span>
-                          {inquiry.replies.length > 0 && unreadReplies === 0 && (
-                            <span className="text-xs text-slate-500">
-                              ({inquiry.replies.length}件の返信)
+                                ? "対応中"
+                                : "完了"}
                             </span>
-                          )}
-                        </div>
-                        {inquiry.stylist && (
-                          <p className="mt-1 text-sm text-slate-600">
-                            スタイリスト: {inquiry.stylist.name}
-                          </p>
-                        )}
-                        <p className="mt-2 text-sm text-slate-900">{inquiry.message}</p>
-                        <p className="mt-2 text-xs text-slate-500">
-                          {new Date(inquiry.createdAt).toLocaleString("ja-JP")}
-                        </p>
-                      </div>
-                      <button
-                        onClick={async () => {
-                          if (expandedInquiry === inquiry.id) {
-                            setExpandedInquiry(null);
-                          } else {
-                            setExpandedInquiry(inquiry.id);
-                            // 未読返信を既読にする
-                            const unreadReplies = inquiry.replies.filter(
-                              (reply) => !reply.isRead && reply.fromType === "stylist"
-                            );
-                            for (const reply of unreadReplies) {
-                              await markReplyAsRead(reply.id);
-                            }
-                            // Headerコンポーネントに未読件数の更新を通知
-                            if (unreadReplies.length > 0) {
-                              window.dispatchEvent(new Event("unreadCountUpdate"));
-                            }
-                          }
-                        }}
-                        className="ml-4 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:border-slate-900 hover:text-slate-900 transition"
-                      >
-                        {expandedInquiry === inquiry.id ? "閉じる" : "返信を確認"}
-                      </button>
-                    </div>
-
-                    {/* 返信一覧と返信フォーム */}
-                    {expandedInquiry === inquiry.id && (
-                      <div className="mt-4 border-t border-slate-200 pt-4 space-y-4">
-                        {/* 返信履歴 */}
-                        {inquiry.replies.length > 0 && (
-                          <div className="space-y-3">
-                            <h4 className="text-sm font-semibold text-slate-900">返信履歴</h4>
-                            {inquiry.replies.map((reply) => (
-                              <div
-                                key={reply.id}
-                                className={`rounded-lg p-3 ${
-                                  reply.fromType === "stylist"
-                                    ? "bg-slate-50 border border-slate-200"
-                                    : "bg-blue-50 border border-blue-200"
-                                } ${!reply.isRead && reply.fromType === "stylist" ? "ring-2 ring-blue-300" : ""}`}
-                              >
-                                <div className="flex items-center justify-between mb-2">
-                                  <div className="flex items-center gap-2">
-                                    <p className="text-xs font-medium text-slate-700">
-                                      {reply.fromType === "stylist"
-                                        ? reply.fromName || "スタイリスト"
-                                        : inquiry.name}
-                                    </p>
-                                    {!reply.isRead && reply.fromType === "stylist" && (
-                                      <span className="inline-flex rounded-full bg-blue-600 px-2 py-0.5 text-xs font-semibold text-white">
-                                        新着
-                                      </span>
-                                    )}
-                                  </div>
-                                  <p className="text-xs text-slate-500">
-                                    {new Date(reply.createdAt).toLocaleString("ja-JP")}
-                                  </p>
-                                </div>
-                                <p className="text-sm text-slate-900 whitespace-pre-wrap">{reply.message}</p>
-                              </div>
-                            ))}
+                            {inquiry.replies.length > 0 && unreadReplies === 0 && (
+                              <span className="text-xs text-slate-500">
+                                ({inquiry.replies.length}件の返信)
+                              </span>
+                            )}
                           </div>
-                        )}
-
-                        {/* 返信フォーム（完了していない場合のみ表示） */}
-                        {inquiry.status !== "resolved" && (
-                          <div className="border-t border-slate-200 pt-4">
-                            <h4 className="text-sm font-semibold text-slate-900 mb-2">返信を送信</h4>
-                            <textarea
-                              value={replyMessages[inquiry.id] || ""}
-                              onChange={(e) =>
-                                setReplyMessages((prev) => ({
-                                  ...prev,
-                                  [inquiry.id]: e.target.value,
-                                }))
-                              }
-                              rows={4}
-                              className="w-full rounded-lg border border-slate-300 px-4 py-2 text-sm focus:border-slate-900 focus:outline-none"
-                              placeholder="スタイリストへの返信メッセージを入力してください"
-                            />
-                            <div className="mt-2 flex items-center justify-between">
-                              <p className="text-xs text-slate-500">
-                                スタイリストに返信を送信します
-                              </p>
-                              <button
-                                onClick={() => handleReply(inquiry.id, inquiry.name, inquiry.email)}
-                                disabled={isReplying[inquiry.id] || !replyMessages[inquiry.id]?.trim()}
-                                className="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                          {inquiry.stylist && (
+                            <p className="mt-1 text-sm text-slate-600">
+                              スタイリスト:{" "}
+                              <Link
+                                href={`/stylists/${inquiry.stylist.id}`}
+                                className="font-medium text-slate-900 hover:text-slate-600 hover:underline transition"
                               >
-                                {isReplying[inquiry.id] ? "送信中..." : "返信を送信"}
-                              </button>
-                            </div>
-                          </div>
-                        )}
-
-                        {inquiry.status === "resolved" && (
-                          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                            <p className="text-sm text-slate-600">
-                              このお問い合わせは完了済みです。新しいお問い合わせは
-                              <Link href="/contact" className="ml-1 font-semibold text-slate-900 hover:underline">
-                                こちらから
+                                {inquiry.stylist.name}
                               </Link>
                             </p>
-                          </div>
-                        )}
+                          )}
+                          <p className="mt-2 text-sm text-slate-900">{inquiry.message}</p>
+                          <p className="mt-2 text-xs text-slate-500">
+                            {new Date(inquiry.createdAt).toLocaleString("ja-JP")}
+                          </p>
+                        </div>
+                        <button
+                          onClick={async () => {
+                            if (expandedInquiry === inquiry.id) {
+                              setExpandedInquiry(null);
+                            } else {
+                              setExpandedInquiry(inquiry.id);
+                              // 未読返信を既読にする
+                              const unreadReplies = inquiry.replies.filter(
+                                (reply) => !reply.isRead && reply.fromType === "stylist"
+                              );
+                              for (const reply of unreadReplies) {
+                                await markReplyAsRead(reply.id);
+                              }
+                              // Headerコンポーネントに未読件数の更新を通知
+                              if (unreadReplies.length > 0) {
+                                window.dispatchEvent(new Event("unreadCountUpdate"));
+                              }
+                            }
+                          }}
+                          className="ml-4 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:border-slate-900 hover:text-slate-900 transition"
+                        >
+                          {expandedInquiry === inquiry.id ? "閉じる" : "返信を確認"}
+                        </button>
                       </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
 
-      <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 text-center">
-        <p className="text-sm text-slate-600">
-          新しいお問い合わせは
-          <Link href="/contact" className="ml-1 font-semibold text-slate-900 hover:underline">
-            こちらから
-          </Link>
-        </p>
+                      {/* 返信一覧と返信フォーム */}
+                      {expandedInquiry === inquiry.id && (
+                        <div className="mt-4 border-t border-slate-200 pt-4 space-y-4">
+                          {/* 返信履歴 */}
+                          {inquiry.replies.length > 0 && (
+                            <div className="space-y-3">
+                              <h4 className="text-sm font-semibold text-slate-900">返信履歴</h4>
+                              {inquiry.replies.map((reply) => (
+                                <div
+                                  key={reply.id}
+                                  className={`rounded-lg p-3 ${
+                                    reply.fromType === "stylist"
+                                      ? "bg-slate-50 border border-slate-200"
+                                      : "bg-blue-50 border border-blue-200"
+                                  } ${!reply.isRead && reply.fromType === "stylist" ? "ring-2 ring-blue-300" : ""}`}
+                                >
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-2">
+                                      <p className="text-xs font-medium text-slate-700">
+                                        {reply.fromType === "stylist"
+                                          ? reply.fromName || "スタイリスト"
+                                          : inquiry.name}
+                                      </p>
+                                      {!reply.isRead && reply.fromType === "stylist" && (
+                                        <span className="inline-flex rounded-full bg-blue-600 px-2 py-0.5 text-xs font-semibold text-white">
+                                          新着
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-xs text-slate-500">
+                                      {new Date(reply.createdAt).toLocaleString("ja-JP")}
+                                    </p>
+                                  </div>
+                                  <p className="text-sm text-slate-900 whitespace-pre-wrap">{reply.message}</p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* 返信フォーム（完了していない場合のみ表示） */}
+                          {inquiry.status !== "resolved" && (
+                            <div className="border-t border-slate-200 pt-4">
+                              <h4 className="text-sm font-semibold text-slate-900 mb-2">返信を送信</h4>
+                              <textarea
+                                value={replyMessages[inquiry.id] || ""}
+                                onChange={(e) =>
+                                  setReplyMessages((prev) => ({
+                                    ...prev,
+                                    [inquiry.id]: e.target.value,
+                                  }))
+                                }
+                                rows={4}
+                                className="w-full rounded-lg border border-slate-300 px-4 py-2 text-sm focus:border-slate-900 focus:outline-none"
+                                placeholder="スタイリストへの返信メッセージを入力してください"
+                              />
+                              <div className="mt-2 flex items-center justify-between">
+                                <p className="text-xs text-slate-500">
+                                  スタイリストに返信を送信します
+                                </p>
+                                <button
+                                  onClick={() => handleReply(inquiry.id, inquiry.name, inquiry.email)}
+                                  disabled={isReplying[inquiry.id] || !replyMessages[inquiry.id]?.trim()}
+                                  className="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  {isReplying[inquiry.id] ? "送信中..." : "返信を送信"}
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
+                          {inquiry.status === "resolved" && (
+                            <div className="space-y-4">
+                              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                                <p className="text-sm text-slate-600">
+                                  このお問い合わせは完了済みです。新しいお問い合わせは
+                                  <Link href="/contact" className="ml-1 font-semibold text-slate-900 hover:underline">
+                                    こちらから
+                                  </Link>
+                                </p>
+                              </div>
+                              {/* スタイリストへの評価フォーム */}
+                              {inquiry.stylist && inquiry.inquiryType === "styling" && user && (
+                                <div className="rounded-lg border border-slate-200 bg-white p-4">
+                                  <h4 className="text-sm font-semibold text-slate-900 mb-3">
+                                    スタイリストを評価する
+                                  </h4>
+                                  <StylistRatingForm
+                                    stylistId={inquiry.stylist.id}
+                                    inquiryId={inquiry.id}
+                                    onSuccess={() => {
+                                      // 評価済みフラグを更新
+                                      setInquiries((prev) =>
+                                        prev.map((inq) =>
+                                          inq.id === inquiry.id ? { ...inq, hasRating: true } : inq
+                                        )
+                                      );
+                                    }}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 text-center">
+          <p className="text-sm text-slate-600">
+            新しいお問い合わせは
+            <Link href="/contact" className="ml-1 font-semibold text-slate-900 hover:underline">
+              こちらから
+            </Link>
+          </p>
+        </div>
       </div>
-    </div>
   );
 }
-
