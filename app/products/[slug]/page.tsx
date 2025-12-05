@@ -50,10 +50,26 @@ async function getProduct(slug: string): Promise<Product | null> {
     const response = await fetch(`${baseUrl}/api/products/slug/${slug}`, {
       cache: "no-store",
     });
+    
     if (!response.ok) {
+      // 404の場合はnullを返す（notFound()を呼ぶため）
+      if (response.status === 404) {
+        return null;
+      }
+      // その他のエラーの場合もログを記録してnullを返す
+      console.error(`商品取得エラー: ${response.status} ${response.statusText}`);
       return null;
     }
-    return await response.json();
+    
+    const product = await response.json();
+    
+    // レスポンスが有効な商品データか確認
+    if (!product || !product.id || !product.slug) {
+      console.error("無効な商品データが返されました:", product);
+      return null;
+    }
+    
+    return product;
   } catch (error) {
     console.error("商品取得エラー:", error);
     return null;
@@ -99,6 +115,12 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function ProductDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
+  
+  // slugのバリデーション
+  if (!slug || typeof slug !== "string" || slug.trim() === "") {
+    notFound();
+  }
+  
   const product = await getProduct(slug);
 
   if (!product) {
