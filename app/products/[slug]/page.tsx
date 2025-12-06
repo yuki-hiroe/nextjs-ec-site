@@ -8,6 +8,10 @@ import StockDisplay from "@/components/StockDisplay";
 import FavoriteButton from "@/components/FavoriteButton";
 import ProductImageGallery from "@/components/ProductImageGallery";
 
+// 商品詳細ページを動的レンダリングに設定（商品更新を即座に反映するため）
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 type Product = {
   id: string;
   slug: string;
@@ -147,25 +151,7 @@ async function getProduct(slug: string): Promise<Product | null> {
   }
 }
 
-async function getAllProducts(): Promise<Array<{ slug: string }>> {
-  try {
-    // ビルド時には直接Prismaを使用（APIサーバーが起動していないため）
-    const products = await prisma.product.findMany({
-      select: {
-        slug: true,
-      },
-    });
-    return products;
-  } catch (error) {
-    console.error("商品一覧取得エラー:", error);
-    return [];
-  }
-}
-
-export async function generateStaticParams() {
-  const products = await getAllProducts();
-  return products.map((product) => ({ slug: product.slug }));
-}
+// generateStaticParamsは削除（動的レンダリングのため）
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
