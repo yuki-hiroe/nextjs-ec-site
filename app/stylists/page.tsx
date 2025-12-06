@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -17,7 +17,7 @@ type Stylist = {
   ratingCount?: number;
 };
 
-export default function StylistsPage() {
+function StylistsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [stylists, setStylists] = useState<Stylist[]>([]);
@@ -180,6 +180,22 @@ export default function StylistsPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function StylistsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="text-center">
+            <p className="text-slate-600">読み込み中...</p>
+          </div>
+        </div>
+      }
+    >
+      <StylistsPageContent />
+    </Suspense>
   );
 }
 
