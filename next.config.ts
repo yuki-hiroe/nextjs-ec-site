@@ -4,6 +4,7 @@ const isDevelopment = process.env.NODE_ENV === "development";
 
 const nextConfig: NextConfig = {
     images: {
+      unoptimized: true, // Vercelでの画像表示問題を解決するため、すべての画像を最適化しない
       remotePatterns: isDevelopment
         ? [
             // 開発環境: すべてのHTTPSドメインを許可
