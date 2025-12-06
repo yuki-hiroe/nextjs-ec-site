@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { prisma } from "@/lib/prisma";
 import AddToCartButton from "@/components/AddToCartButton";
 import StockDisplay from "@/components/StockDisplay";
 import FavoriteButton from "@/components/FavoriteButton";
@@ -78,15 +79,13 @@ async function getProduct(slug: string): Promise<Product | null> {
 
 async function getAllProducts(): Promise<Array<{ slug: string }>> {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-    const response = await fetch(`${baseUrl}/api/products`, {
-      cache: "no-store",
+    // ビルド時には直接Prismaを使用（APIサーバーが起動していないため）
+    const products = await prisma.product.findMany({
+      select: {
+        slug: true,
+      },
     });
-    if (!response.ok) {
-      return [];
-    }
-    const products = await response.json();
-    return products.map((p: any) => ({ slug: p.slug }));
+    return products;
   } catch (error) {
     console.error("商品一覧取得エラー:", error);
     return [];

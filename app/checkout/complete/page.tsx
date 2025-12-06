@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-export default function CheckoutCompletePage() {
+function CheckoutCompleteContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get("orderId");
   const [orderData, setOrderData] = useState<any>(null);
@@ -261,6 +261,22 @@ export default function CheckoutCompletePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CheckoutCompletePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="text-center">
+            <p className="text-slate-600">読み込み中...</p>
+          </div>
+        </div>
+      }
+    >
+      <CheckoutCompleteContent />
+    </Suspense>
   );
 }
 
