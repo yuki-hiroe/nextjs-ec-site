@@ -64,7 +64,7 @@ export async function POST(
     });
 
     // 監査ログを記録
-    const { ipAddress, userAgent } = getRequestInfo(request);
+    const { ipAddress, userAgent } = getRequestInfo(request) || { ipAddress: undefined, userAgent: undefined };
     await createAuditLog({
       action: "activate",
       targetType: "user",
@@ -81,8 +81,8 @@ export async function POST(
       },
       performedBy: admin.id,
       performedByEmail: admin.email,
-      ipAddress,
-      userAgent,
+      ipAddress: ipAddress || undefined,
+      userAgent: userAgent || undefined,
     });
 
     return NextResponse.json({

@@ -80,7 +80,7 @@ export async function PATCH(
     });
 
     // 監査ログを記録
-    const { ipAddress, userAgent } = getRequestInfo(request);
+    const { ipAddress, userAgent } = getRequestInfo(request) || { ipAddress: undefined, userAgent: undefined };
     await createAuditLog({
       action: "update",
       targetType: "order",
@@ -98,8 +98,8 @@ export async function PATCH(
       },
       performedBy: admin.id,
       performedByEmail: admin.email,
-      ipAddress,
-      userAgent,
+      ipAddress: ipAddress || undefined,
+      userAgent: userAgent || undefined,
     });
 
     return NextResponse.json({

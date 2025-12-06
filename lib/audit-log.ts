@@ -30,7 +30,7 @@ export async function createAuditLog(params: CreateAuditLogParams) {
         targetId: params.targetId,
         targetEmail: params.targetEmail || null,
         reason: params.reason,
-        details: params.details || null,
+        details: params.details || undefined,
         performedBy: params.performedBy,
         performedByEmail: params.performedByEmail,
         ipAddress: params.ipAddress || null,

@@ -119,7 +119,7 @@ export async function PATCH(
     });
 
     // 監査ログを記録
-    const { ipAddress, userAgent } = getRequestInfo(request);
+    const { ipAddress, userAgent } = getRequestInfo(request) || { ipAddress: undefined, userAgent: undefined };
     await createAuditLog({
       action: "update",
       targetType: "user",
@@ -142,8 +142,8 @@ export async function PATCH(
       },
       performedBy: admin.id,
       performedByEmail: admin.email,
-      ipAddress,
-      userAgent,
+      ipAddress: ipAddress || undefined,
+      userAgent: userAgent || undefined,
     });
 
     return NextResponse.json({
@@ -217,7 +217,7 @@ export async function DELETE(
     }
 
     // 監査ログを記録（削除前に記録）
-    const { ipAddress, userAgent } = getRequestInfo(request);
+    const { ipAddress, userAgent } = getRequestInfo(request) || { ipAddress: undefined, userAgent: undefined };
     await createAuditLog({
       action: "delete",
       targetType: "user",
@@ -233,8 +233,8 @@ export async function DELETE(
       },
       performedBy: admin.id,
       performedByEmail: admin.email,
-      ipAddress,
-      userAgent,
+      ipAddress: ipAddress || undefined,
+      userAgent: userAgent || undefined,
     });
 
     // ユーザーを削除
