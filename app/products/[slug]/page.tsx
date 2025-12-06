@@ -166,10 +166,13 @@ async function getProduct(slug: string): Promise<Product | null> {
     }
     
     // メイン画像がimages配列に含まれていない場合は追加（depop.comでない限り）
-    const validMainImage = product.image && !product.image.includes("depop.com") ? product.image : product.image;
-    if (images.length === 0 && validMainImage) {
-      images = [validMainImage];
-    } else if (validMainImage && !images.includes(validMainImage)) {
+    const validMainImage = product.image && !product.image.includes("depop.com") ? product.image.trim() : (product.image?.trim() || "");
+    
+    // メイン画像を最初に配置（重複を避ける）
+    if (validMainImage) {
+      // メイン画像が既にimages配列に含まれている場合は削除
+      images = images.filter(img => img !== validMainImage);
+      // メイン画像を最初に追加
       images = [validMainImage, ...images];
     }
 

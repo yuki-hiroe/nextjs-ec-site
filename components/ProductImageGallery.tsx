@@ -22,10 +22,31 @@ export default function ProductImageGallery({
 
   // メイン画像とサムネイル画像を結合（重複を除去し、メイン画像が最初に来るように）
   // depop.comのURLのみを除外
-  const validImages = images.filter((img) => img && !img.includes("depop.com"));
-  const uniqueImages = Array.from(new Set(validImages));
-  const otherImages = uniqueImages.filter((img) => img !== validMainImage && img !== mainImage && img.trim() !== "");
-  const allImages = [validMainImage || mainImage, ...otherImages].filter((img) => img && img.trim() !== "");
+  const validImages = images
+    .filter((img) => img && typeof img === "string" && img.trim() !== "" && !img.includes("depop.com"))
+    .map((img) => img.trim());
+  
+  // メイン画像のURLを取得（正規化）
+  const mainImageUrl = (validMainImage || mainImage)?.trim() || "";
+  
+  // メイン画像を除いた画像リストを作成（重複を除去）
+  const otherImages = validImages.filter((img) => {
+    return img !== "" && img !== mainImageUrl;
+  });
+  
+  // 重複を除去（URLの完全一致で比較）
+  const uniqueOtherImages = Array.from(new Set(otherImages));
+  
+  // メイン画像を最初に、その後に他の画像を追加
+  const allImages: string[] = [];
+  if (mainImageUrl) {
+    allImages.push(mainImageUrl);
+  }
+  uniqueOtherImages.forEach(img => {
+    if (img && !allImages.includes(img)) {
+      allImages.push(img);
+    }
+  });
 
   const handleImageError = (imgSrc: string) => {
     setImageErrors((prev) => new Set(prev).add(imgSrc));
