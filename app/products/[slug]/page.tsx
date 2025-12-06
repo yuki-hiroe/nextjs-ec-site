@@ -47,30 +47,238 @@ type Product = {
 
 async function getProduct(slug: string): Promise<Product | null> {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-    const response = await fetch(`${baseUrl}/api/products/slug/${slug}`, {
-      cache: "no-store",
+    // ビルド時には直接Prismaを使用（APIサーバーが起動していないため）
+    const product = await prisma.product.findUnique({
+      where: {
+        slug: slug,
+      },
+      include: {
+        relatedProducts: {
+          include: {
+            related: {
+              select: {
+                id: true,
+                slug: true,
+                name: true,
+                price: true,
+                image: true,
+                tagline: true,
+                badges: true,
+              },
+            },
+            product: {
+              select: {
+                id: true,
+                slug: true,
+                name: true,
+                price: true,
+                image: true,
+                tagline: true,
+                badges: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+        },
+      },
     });
-    
-    if (!response.ok) {
-      // 404の場合はnullを返す（notFound()を呼ぶため）
-      if (response.status === 404) {
-        return null;
+
+    if (!product) {
+      return null;
+    }
+
+    // badgesを配列として処理
+    let badges: string[] = [];
+    if (product.badges) {
+      if (Array.isArray(product.badges)) {
+        badges = product.badges.filter((b): b is string => typeof b === "string");
+      } else if (typeof product.badges === "string") {
+        try {
+          const parsed = JSON.parse(product.badges);
+          if (Array.isArray(parsed)) {
+            badges = parsed.filter((b): b is string => typeof b === "string");
+          }
+        } catch {
+          badges = [];
+        }
       }
-      // その他のエラーの場合もログを記録してnullを返す
-      console.error(`商品取得エラー: ${response.status} ${response.statusText}`);
-      return null;
     }
-    
-    const product = await response.json();
-    
-    // レスポンスが有効な商品データか確認
-    if (!product || !product.id || !product.slug) {
-      console.error("無効な商品データが返されました:", product);
-      return null;
+
+    // featuresを配列として処理
+    let features: string[] = [];
+    if (product.features) {
+      if (Array.isArray(product.features)) {
+        features = product.features.filter((f): f is string => typeof f === "string");
+      } else if (typeof product.features === "string") {
+        try {
+          const parsed = JSON.parse(product.features);
+          if (Array.isArray(parsed)) {
+            features = parsed.filter((f): f is string => typeof f === "string");
+          }
+        } catch {
+          features = [];
+        }
+      }
     }
-    
-    return product;
+
+    // specsを配列として処理
+    let specs: { label: string; value: string }[] = [];
+    if (product.specs) {
+      if (Array.isArray(product.specs)) {
+        specs = product.specs.filter((s): s is { label: string; value: string } => 
+          typeof s === "object" && s !== null && "label" in s && "value" in s
+        );
+      } else if (typeof product.specs === "string") {
+        try {
+          const parsed = JSON.parse(product.specs);
+          if (Array.isArray(parsed)) {
+            specs = parsed.filter((s): s is { label: string; value: string } => 
+              typeof s === "object" && s !== null && "label" in s && "value" in s
+            );
+          }
+        } catch {
+          specs = [];
+        }
+      }
+    }
+
+    // imagesを配列として処理
+    let images: string[] = [];
+    if (product.images) {
+      if (Array.isArray(product.images)) {
+        images = product.images.filter((img): img is string => typeof img === "string");
+      } else if (typeof product.images === "string") {
+        try {
+          const parsed = JSON.parse(product.images);
+          if (Array.isArray(parsed)) {
+            images = parsed.filter((img): img is string => typeof img === "string");
+          }
+        } catch {
+          images = [];
+        }
+      }
+    }
+
+    // relatedProductsを処理
+    const relatedProducts: Array<{
+      product?: {
+        id: string;
+        slug: string;
+        name: string;
+        price: string;
+        image: string;
+        tagline: string;
+        badges: string[];
+      };
+      related?: {
+        id: string;
+        slug: string;
+        name: string;
+        price: string;
+        image: string;
+        tagline: string;
+        badges: string[];
+      };
+    }> = product.relatedProducts?.map((rel) => {
+      const result: {
+        product?: {
+          id: string;
+          slug: string;
+          name: string;
+          price: string;
+          image: string;
+          tagline: string;
+          badges: string[];
+        };
+        related?: {
+          id: string;
+          slug: string;
+          name: string;
+          price: string;
+          image: string;
+          tagline: string;
+          badges: string[];
+        };
+      } = {};
+
+      // productの処理
+      if (rel.product) {
+        let productBadges: string[] = [];
+        if (rel.product.badges) {
+          if (Array.isArray(rel.product.badges)) {
+            productBadges = rel.product.badges.filter((b): b is string => typeof b === "string");
+          } else if (typeof rel.product.badges === "string") {
+            try {
+              const parsed = JSON.parse(rel.product.badges);
+              if (Array.isArray(parsed)) {
+                productBadges = parsed.filter((b): b is string => typeof b === "string");
+              }
+            } catch {
+              productBadges = [];
+            }
+          }
+        }
+        result.product = {
+          id: rel.product.id,
+          slug: rel.product.slug,
+          name: rel.product.name,
+          price: rel.product.price,
+          image: rel.product.image,
+          tagline: rel.product.tagline || "",
+          badges: productBadges,
+        };
+      }
+
+      // relatedの処理
+      if (rel.related) {
+        let relatedBadges: string[] = [];
+        if (rel.related.badges) {
+          if (Array.isArray(rel.related.badges)) {
+            relatedBadges = rel.related.badges.filter((b): b is string => typeof b === "string");
+          } else if (typeof rel.related.badges === "string") {
+            try {
+              const parsed = JSON.parse(rel.related.badges);
+              if (Array.isArray(parsed)) {
+                relatedBadges = parsed.filter((b): b is string => typeof b === "string");
+              }
+            } catch {
+              relatedBadges = [];
+            }
+          }
+        }
+        result.related = {
+          id: rel.related.id,
+          slug: rel.related.slug,
+          name: rel.related.name,
+          price: rel.related.price,
+          image: rel.related.image,
+          tagline: rel.related.tagline || "",
+          badges: relatedBadges,
+        };
+      }
+
+      return result;
+    }) || [];
+
+    return {
+      id: product.id,
+      slug: product.slug,
+      name: product.name,
+      price: product.price,
+      tagline: product.tagline || "",
+      description: product.description || "",
+      badges,
+      features,
+      specs,
+      shipping: product.shipping || "",
+      care: product.care || "",
+      image: product.image,
+      images,
+      stock: product.stock,
+      relatedProducts,
+    };
   } catch (error) {
     console.error("商品取得エラー:", error);
     return null;

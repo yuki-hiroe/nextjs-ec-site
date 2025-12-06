@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { prisma } from "@/lib/prisma";
 
 type Product = {
   id: string;
@@ -19,30 +20,33 @@ export const metadata: Metadata = {
 
 async function getProducts(): Promise<Product[]> {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-    const response = await fetch(`${baseUrl}/api/products`, {
-      cache: "no-store",
+    // ビルド時には直接Prismaを使用（APIサーバーが起動していないため）
+    const products = await prisma.product.findMany({
+      orderBy: {
+        createdAt: "desc",
+      },
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        price: true,
+        tagline: true,
+        badges: true,
+        image: true,
+      },
     });
     
-    if (!response.ok) {
-      throw new Error(`商品の取得に失敗しました: ${response.status}`);
-    }
-    
-    const products = await response.json();
-    
-    if (!Array.isArray(products)) {
-      console.error("商品データが配列ではありません:", products);
-      return [];
-    }
-    
-    return products.map((product: any) => {
+    return products.map((product) => {
       // badgesが文字列の場合はパース、配列の場合はそのまま使用
       let badges: string[] = [];
       if (Array.isArray(product.badges)) {
-        badges = product.badges;
+        badges = product.badges.filter((b): b is string => typeof b === "string");
       } else if (typeof product.badges === 'string') {
         try {
-          badges = JSON.parse(product.badges);
+          const parsed = JSON.parse(product.badges);
+          if (Array.isArray(parsed)) {
+            badges = parsed.filter((b): b is string => typeof b === "string");
+          }
         } catch {
           badges = [];
         }
