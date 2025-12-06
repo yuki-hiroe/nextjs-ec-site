@@ -63,6 +63,14 @@ const nextConfig: NextConfig = {
               protocol: "https",
               hostname: "www.uniqlo.com",
             },
+            {
+              protocol: "https",
+              hostname: "img.giftmall.co.jp",
+            },
+            {
+              protocol: "https",
+              hostname: "trentasette37.com",
+            },
           ],
     },
 };
