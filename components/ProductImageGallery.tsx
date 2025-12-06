@@ -9,45 +9,23 @@ type ProductImageGalleryProps = {
   productName: string;
 };
 
-// 有効な画像URLかどうかをチェック
-const isValidImageUrl = (url: string): boolean => {
-  if (!url || typeof url !== "string" || url.trim() === "") {
-    return false;
-  }
-  
-  try {
-    const urlObj = new URL(url);
-    // 無効なドメインをフィルタリング
-    const invalidDomains = ["depop.com", "mediaphotos.depop.com"];
-    const hostname = urlObj.hostname.toLowerCase();
-    
-    if (invalidDomains.some(domain => hostname.includes(domain))) {
-      return false;
-    }
-    
-    // HTTPSまたはHTTPプロトコルのみ許可
-    return urlObj.protocol === "https:" || urlObj.protocol === "http:";
-  } catch {
-    return false;
-  }
-};
-
 export default function ProductImageGallery({
   mainImage,
   images,
   productName,
 }: ProductImageGalleryProps) {
-  // 有効なメイン画像のみを使用
-  const validMainImage = isValidImageUrl(mainImage) ? mainImage : "";
-  const [selectedImage, setSelectedImage] = useState(validMainImage);
+  // 無効なドメイン（depop.com）のみを除外し、それ以外は許可
+  // メイン画像が無効なドメインでない限り使用
+  const validMainImage = mainImage && !mainImage.includes("depop.com") ? mainImage : (mainImage || "");
+  const [selectedImage, setSelectedImage] = useState(validMainImage || mainImage);
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
 
   // メイン画像とサムネイル画像を結合（重複を除去し、メイン画像が最初に来るように）
-  // images配列から重複を除去し、メイン画像と異なる画像のみを取得
-  const validImages = images.filter((img) => isValidImageUrl(img));
+  // depop.comのURLのみを除外
+  const validImages = images.filter((img) => img && !img.includes("depop.com"));
   const uniqueImages = Array.from(new Set(validImages));
-  const otherImages = uniqueImages.filter((img) => img !== validMainImage && img.trim() !== "");
-  const allImages = [validMainImage, ...otherImages].filter((img) => img && img.trim() !== "");
+  const otherImages = uniqueImages.filter((img) => img !== validMainImage && img !== mainImage && img.trim() !== "");
+  const allImages = [validMainImage || mainImage, ...otherImages].filter((img) => img && img.trim() !== "");
 
   const handleImageError = (imgSrc: string) => {
     setImageErrors((prev) => new Set(prev).add(imgSrc));
