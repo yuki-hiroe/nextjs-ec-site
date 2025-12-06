@@ -9,19 +9,45 @@ type ProductImageGalleryProps = {
   productName: string;
 };
 
+// 有効な画像URLかどうかをチェック
+const isValidImageUrl = (url: string): boolean => {
+  if (!url || typeof url !== "string" || url.trim() === "") {
+    return false;
+  }
+  
+  try {
+    const urlObj = new URL(url);
+    // 無効なドメインをフィルタリング
+    const invalidDomains = ["depop.com", "mediaphotos.depop.com"];
+    const hostname = urlObj.hostname.toLowerCase();
+    
+    if (invalidDomains.some(domain => hostname.includes(domain))) {
+      return false;
+    }
+    
+    // HTTPSまたはHTTPプロトコルのみ許可
+    return urlObj.protocol === "https:" || urlObj.protocol === "http:";
+  } catch {
+    return false;
+  }
+};
+
 export default function ProductImageGallery({
   mainImage,
   images,
   productName,
 }: ProductImageGalleryProps) {
-  const [selectedImage, setSelectedImage] = useState(mainImage);
+  // 有効なメイン画像のみを使用
+  const validMainImage = isValidImageUrl(mainImage) ? mainImage : "";
+  const [selectedImage, setSelectedImage] = useState(validMainImage);
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
 
   // メイン画像とサムネイル画像を結合（重複を除去し、メイン画像が最初に来るように）
   // images配列から重複を除去し、メイン画像と異なる画像のみを取得
-  const uniqueImages = Array.from(new Set(images));
-  const otherImages = uniqueImages.filter((img) => img !== mainImage && img.trim() !== "");
-  const allImages = [mainImage, ...otherImages].filter((img) => img && img.trim() !== "");
+  const validImages = images.filter((img) => isValidImageUrl(img));
+  const uniqueImages = Array.from(new Set(validImages));
+  const otherImages = uniqueImages.filter((img) => img !== validMainImage && img.trim() !== "");
+  const allImages = [validMainImage, ...otherImages].filter((img) => img && img.trim() !== "");
 
   const handleImageError = (imgSrc: string) => {
     setImageErrors((prev) => new Set(prev).add(imgSrc));

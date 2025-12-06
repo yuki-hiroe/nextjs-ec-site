@@ -144,20 +144,45 @@ async function getProduct(slug: string): Promise<Product | null> {
       }
     }
 
+    // 有効な画像URLかどうかをチェックする関数
+    const isValidImageUrl = (url: string): boolean => {
+      if (!url || typeof url !== "string" || url.trim() === "") {
+        return false;
+      }
+      
+      try {
+        const urlObj = new URL(url);
+        // 無効なドメインをフィルタリング
+        const invalidDomains = ["depop.com", "mediaphotos.depop.com"];
+        const hostname = urlObj.hostname.toLowerCase();
+        
+        if (invalidDomains.some(domain => hostname.includes(domain))) {
+          return false;
+        }
+        
+        // HTTPSまたはHTTPプロトコルのみ許可
+        return urlObj.protocol === "https:" || urlObj.protocol === "http:";
+      } catch {
+        return false;
+      }
+    };
+
     // imagesを配列として処理
     let images: string[] = [];
     if (product.images) {
       if (Array.isArray(product.images)) {
         images = product.images
           .filter((img): img is string => typeof img === "string" && img.trim() !== "")
-          .map((img) => img.trim());
+          .map((img) => img.trim())
+          .filter((img) => isValidImageUrl(img));
       } else if (typeof product.images === "string") {
         try {
           const parsed = JSON.parse(product.images);
           if (Array.isArray(parsed)) {
             images = parsed
               .filter((img): img is string => typeof img === "string" && img.trim() !== "")
-              .map((img) => img.trim());
+              .map((img) => img.trim())
+              .filter((img) => isValidImageUrl(img));
           }
         } catch {
           images = [];
@@ -165,11 +190,12 @@ async function getProduct(slug: string): Promise<Product | null> {
       }
     }
     
-    // メイン画像がimages配列に含まれていない場合は追加
-    if (images.length === 0 && product.image) {
-      images = [product.image];
-    } else if (product.image && !images.includes(product.image)) {
-      images = [product.image, ...images];
+    // メイン画像が有効な場合のみ追加
+    const validMainImage = isValidImageUrl(product.image) ? product.image : "";
+    if (images.length === 0 && validMainImage) {
+      images = [validMainImage];
+    } else if (validMainImage && !images.includes(validMainImage)) {
+      images = [validMainImage, ...images];
     }
 
     // relatedProductsを処理
@@ -285,7 +311,7 @@ async function getProduct(slug: string): Promise<Product | null> {
       specs,
       shipping: product.shipping || "",
       care: product.care || "",
-      image: product.image,
+      image: validMainImage || product.image, // 有効なメイン画像を使用、なければ元の画像
       images,
       stock: product.stock,
       relatedProducts,
