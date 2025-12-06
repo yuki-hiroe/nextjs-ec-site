@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
 
@@ -85,6 +86,12 @@ export async function PATCH(
       );
     }
 
+    // 既存の商品を取得（slugを取得するため）
+    const existingProduct = await prisma.product.findUnique({
+      where: { id },
+      select: { slug: true },
+    });
+
     // 商品を更新
     const product = await prisma.product.update({
       where: { id },
@@ -104,6 +111,14 @@ export async function PATCH(
         images: Array.isArray(images) ? images : [],
       },
     });
+
+    // キャッシュを無効化（商品詳細ページと商品一覧ページ）
+    if (existingProduct) {
+      revalidatePath(`/products/${existingProduct.slug}`);
+    }
+    revalidatePath(`/products/${product.slug}`);
+    revalidatePath("/products");
+    revalidatePath("/");
 
     return NextResponse.json({ product });
   } catch (error: any) {

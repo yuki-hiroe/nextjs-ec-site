@@ -23,26 +23,6 @@ type Product = {
   image: string;
   images: string[];
   stock: number;
-  relatedProducts?: Array<{
-    product?: {
-      id: string;
-      slug: string;
-      name: string;
-      price: string;
-      image: string;
-      tagline: string;
-      badges: string[];
-    };
-    related?: {
-      id: string;
-      slug: string;
-      name: string;
-      price: string;
-      image: string;
-      tagline: string;
-      badges: string[];
-    };
-  }>;
 };
 
 async function getProduct(slug: string): Promise<Product | null> {
@@ -51,37 +31,6 @@ async function getProduct(slug: string): Promise<Product | null> {
     const product = await prisma.product.findUnique({
       where: {
         slug: slug,
-      },
-      include: {
-        relatedProducts: {
-          include: {
-            related: {
-              select: {
-                id: true,
-                slug: true,
-                name: true,
-                price: true,
-                image: true,
-                tagline: true,
-                badges: true,
-              },
-            },
-            product: {
-              select: {
-                id: true,
-                slug: true,
-                name: true,
-                price: true,
-                image: true,
-                tagline: true,
-                badges: true,
-              },
-            },
-          },
-          orderBy: {
-            createdAt: 'desc',
-          },
-        },
       },
     });
 
@@ -176,107 +125,6 @@ async function getProduct(slug: string): Promise<Product | null> {
       images = [validMainImage, ...images];
     }
 
-    // relatedProductsを処理
-    const relatedProducts: Array<{
-      product?: {
-        id: string;
-        slug: string;
-        name: string;
-        price: string;
-        image: string;
-        tagline: string;
-        badges: string[];
-      };
-      related?: {
-        id: string;
-        slug: string;
-        name: string;
-        price: string;
-        image: string;
-        tagline: string;
-        badges: string[];
-      };
-    }> = product.relatedProducts?.map((rel) => {
-      const result: {
-        product?: {
-          id: string;
-          slug: string;
-          name: string;
-          price: string;
-          image: string;
-          tagline: string;
-          badges: string[];
-        };
-        related?: {
-          id: string;
-          slug: string;
-          name: string;
-          price: string;
-          image: string;
-          tagline: string;
-          badges: string[];
-        };
-      } = {};
-
-      // productの処理
-      if (rel.product) {
-        let productBadges: string[] = [];
-        if (rel.product.badges) {
-          if (Array.isArray(rel.product.badges)) {
-            productBadges = rel.product.badges.filter((b): b is string => typeof b === "string");
-          } else if (typeof rel.product.badges === "string") {
-            try {
-              const parsed = JSON.parse(rel.product.badges);
-              if (Array.isArray(parsed)) {
-                productBadges = parsed.filter((b): b is string => typeof b === "string");
-              }
-            } catch {
-              productBadges = [];
-            }
-          }
-        }
-        result.product = {
-          id: rel.product.id,
-          slug: rel.product.slug,
-          name: rel.product.name,
-          price: rel.product.price,
-          image: rel.product.image,
-          tagline: rel.product.tagline || "",
-          badges: productBadges,
-        };
-      }
-
-      // relatedの処理
-      if (rel.related) {
-        let relatedBadges: string[] = [];
-        if (rel.related.badges) {
-          if (Array.isArray(rel.related.badges)) {
-            relatedBadges = rel.related.badges.filter((b): b is string => typeof b === "string");
-          } else if (typeof rel.related.badges === "string") {
-            try {
-              const parsed = JSON.parse(rel.related.badges);
-              if (Array.isArray(parsed)) {
-                relatedBadges = parsed.filter((b): b is string => typeof b === "string");
-              }
-            } catch {
-              relatedBadges = [];
-            }
-          }
-        }
-        result.related = {
-          id: rel.related.id,
-          slug: rel.related.slug,
-          name: rel.related.name,
-          price: rel.related.price,
-          image: rel.related.image,
-          tagline: rel.related.tagline || "",
-          badges: relatedBadges,
-        };
-      }
-
-      return result;
-    }) || [];
-
     return {
       id: product.id,
       slug: product.slug,
@@ -292,7 +140,6 @@ async function getProduct(slug: string): Promise<Product | null> {
       image: product.image, // 元の画像を使用（depop.comの場合はエラーハンドリングで対応）
       images,
       stock: product.stock,
-      relatedProducts,
     };
   } catch (error) {
     console.error("商品取得エラー:", error);
@@ -348,8 +195,6 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   if (!product) {
     notFound();
   }
-
-  const relatedProducts = product.relatedProducts || [];
 
   return (
     <div className="space-y-10">
@@ -451,65 +296,6 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         </div>
       </section>
 
-      {relatedProducts.length > 0 && (
-        <section className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm uppercase tracking-[0.3em] text-slate-500">Recommended</p>
-              <h3 className="text-2xl font-semibold text-slate-900">合わせて見られている商品</h3>
-            </div>
-            <Link href="/products" className="text-sm text-slate-500 hover:text-slate-900">
-              全商品を見る →
-            </Link>
-          </div>
-          <div className="grid gap-6 md:grid-cols-3">
-            {relatedProducts
-              .map((rel) => {
-                // rel.product または rel.related のどちらかを使用
-                const item = rel.product || rel.related;
-                // itemが存在し、必要なプロパティがあることを確認
-                if (!item || typeof item !== 'object' || !item.slug || !item.image || !item.name) {
-                  return null;
-                }
-                // imageが文字列であることを確認
-                if (typeof item.image !== 'string' || item.image.trim() === '') {
-                  return null;
-                }
-                return (
-                  <article
-                    key={item.slug}
-                    className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
-                  >
-                    <div className="relative h-40 w-full overflow-hidden rounded-2xl bg-slate-100">
-                      <Image
-                        src={item.image}
-                        alt={item.name || "商品画像"}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 100vw, 33vw"
-                        unoptimized
-                      />
-                    </div>
-                    {item.badges && Array.isArray(item.badges) && item.badges.length > 0 && (
-                      <p className="mt-4 text-xs uppercase tracking-[0.3em] text-slate-400">
-                        {item.badges[0]}
-                      </p>
-                    )}
-                    <h4 className="mt-2 text-lg font-semibold text-slate-900">{item.name}</h4>
-                    {item.tagline && (
-                      <p className="mt-1 text-sm text-slate-500">{item.tagline}</p>
-                    )}
-                    <p className="mt-3 text-sm font-semibold text-slate-900">{item.price}</p>
-                    <Link href={`/products/${item.slug}`} className="mt-3 inline-flex text-sm font-semibold text-slate-900 hover:underline">
-                      詳細を見る
-                    </Link>
-                  </article>
-                );
-              })
-              .filter(Boolean)}
-          </div>
-        </section>
-      )}
     </div>
   );
 }
