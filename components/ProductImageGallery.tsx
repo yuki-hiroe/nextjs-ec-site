@@ -33,6 +33,7 @@ export default function ProductImageGallery({
           className="object-cover transition-opacity duration-300"
           sizes="(max-width: 1024px) 100vw, 50vw"
           priority
+          unoptimized
         />
       </div>
 
@@ -56,6 +57,7 @@ export default function ProductImageGallery({
                 fill
                 className="object-cover"
                 sizes="(max-width: 1024px) 25vw, 12.5vw"
+                unoptimized
               />
             </button>
           ))}

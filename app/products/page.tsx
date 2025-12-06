@@ -107,6 +107,7 @@ export default async function ProductsPage() {
                 fill
                 className="object-cover transition-transform group-hover:scale-105"
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
+                unoptimized
               />
             </div>
             <div className="mt-4 flex items-start justify-between gap-2">

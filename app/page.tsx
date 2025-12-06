@@ -197,6 +197,7 @@ export default async function HomePage() {
                     fill
                     className="object-cover transition-transform group-hover:scale-105"
                     sizes="(max-width: 640px) 100vw, 280px"
+                    unoptimized
                   />
                 </div>
                   <div className="mt-4 flex items-center justify-between gap-2">

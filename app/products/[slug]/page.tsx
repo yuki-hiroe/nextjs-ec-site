@@ -472,6 +472,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                         fill
                         className="object-cover"
                         sizes="(max-width: 768px) 100vw, 33vw"
+                        unoptimized
                       />
                     </div>
                     {item.badges && Array.isArray(item.badges) && item.badges.length > 0 && (
