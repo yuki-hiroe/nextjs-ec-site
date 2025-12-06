@@ -148,17 +148,28 @@ async function getProduct(slug: string): Promise<Product | null> {
     let images: string[] = [];
     if (product.images) {
       if (Array.isArray(product.images)) {
-        images = product.images.filter((img): img is string => typeof img === "string");
+        images = product.images
+          .filter((img): img is string => typeof img === "string" && img.trim() !== "")
+          .map((img) => img.trim());
       } else if (typeof product.images === "string") {
         try {
           const parsed = JSON.parse(product.images);
           if (Array.isArray(parsed)) {
-            images = parsed.filter((img): img is string => typeof img === "string");
+            images = parsed
+              .filter((img): img is string => typeof img === "string" && img.trim() !== "")
+              .map((img) => img.trim());
           }
         } catch {
           images = [];
         }
       }
+    }
+    
+    // メイン画像がimages配列に含まれていない場合は追加
+    if (images.length === 0 && product.image) {
+      images = [product.image];
+    } else if (product.image && !images.includes(product.image)) {
+      images = [product.image, ...images];
     }
 
     // relatedProductsを処理
