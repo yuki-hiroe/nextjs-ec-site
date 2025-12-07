@@ -204,6 +204,8 @@ DIRECT_URL="postgresql://postgres.xxmkatizftqbpenqesnn:watashihahiroedesu@aws-1-
 
 # NextAuth
 NEXTAUTH_URL="http://localhost:3000"
+# 本番環境
+NEXTAUTH_URL="https://nextjs-ec-site-cffg.vercel.app/profile"
 NEXTAUTH_SECRET=26TAUSh0o4dgbGK+mrU8LcaxLo7e6pwLH/6H0m0hfXs=
 ```
 
@@ -244,6 +246,26 @@ openssl rand -base64 32
 - [ ] E2Eテスト（Playwright）
 - [ ] Vercelへのデプロイ
 - [ ] 技術ブログ記事の執筆（Qiita）
+
+## 🚀 デモ
+
+**本番環境:** https://nextjs-ec-site-cffg.vercel.app/
+
+実際に動作するサイトをご覧いただけます。
+
+### テストアカウント
+
+お試しいただく際は、以下のアカウントをご利用ください：
+
+**一般ユーザー:**
+- メールアドレス: `sample@intercambio.com`
+- パスワード: `sample123`
+
+**管理者:**
+- メールアドレス: `admin@example.com`
+- パスワード: `admin123`
+
+※ テスト用のアカウントです。自由にお試しください。
 
 ## 👤 作者
 
