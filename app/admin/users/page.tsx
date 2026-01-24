@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 
 type User = {
   id: string;
@@ -37,20 +38,29 @@ export default function AdminUsersPage() {
   const [reason, setReason] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
 
+  const { data: session, status } = useSession();
+
   useEffect(() => {
-    // 管理者認証チェック
-    const admin = localStorage.getItem("admin");
-    if (!admin) {
+    // NextAuthセッションで管理者認証を確認
+    if (status === "loading") {
+      return; // セッション読み込み中
+    }
+
+    if (status === "unauthenticated" || !session?.user) {
+      router.push("/admin/login");
+      return;
+    }
+
+    if (session.user.role !== "admin") {
       router.push("/admin/login");
       return;
     }
 
     fetchUsers();
-  }, [router, showSuspended]);
+  }, [router, showSuspended, session, status]);
 
   const fetchUsers = async () => {
     try {
-      const adminData = JSON.parse(localStorage.getItem("admin") || "{}");
       const response = await fetch(
         `/api/admin/users?includeSuspended=${showSuspended}&search=${encodeURIComponent(searchTerm)}`,
         {
@@ -58,7 +68,6 @@ export default function AdminUsersPage() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ adminId: adminData.id }),
         }
       );
       const data = await response.json();
@@ -82,13 +91,10 @@ export default function AdminUsersPage() {
       return;
     }
 
-    const adminData = JSON.parse(localStorage.getItem("admin") || "{}");
-
     setIsProcessing(true);
     try {
       let response;
       const requestBody = {
-        adminId: adminData.id,
         reason: reason.trim(),
       };
 

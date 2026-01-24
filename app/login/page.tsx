@@ -78,6 +78,12 @@ function LoginPageContent() {
             こちら
             </Link>
           </p>
+          <p className="mt-2 text-sm text-slate-600">
+            管理者アカウントの方は
+            <Link href="/admin/login" className="ml-1 font-semibold text-slate-900 hover:underline">
+            こちら
+            </Link>
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">

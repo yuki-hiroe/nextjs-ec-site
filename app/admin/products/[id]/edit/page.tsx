@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 
 export default function EditProductPage() {
   const router = useRouter();
@@ -27,59 +28,31 @@ export default function EditProductPage() {
     images: "",
   });
 
+  const { data: session, status } = useSession();
+
   useEffect(() => {
-    const admin = localStorage.getItem("admin");
-    if (!admin) {
+    // NextAuthセッションで管理者認証を確認
+    if (status === "loading") {
+      return; // セッション読み込み中
+    }
+
+    if (status === "unauthenticated" || !session?.user) {
+      router.push("/admin/login");
+      return;
+    }
+
+    if (session.user.role !== "admin") {
       router.push("/admin/login");
       return;
     }
 
     // 商品情報を取得
     fetchProduct();
-  }, [router, productId]);
-
-  // UTF-8文字列をbase64エンコードするヘルパー関数
-  const encodeToBase64 = (str: string): string => {
-    if (!str) return "";
-    
-    try {
-      // TextEncoderでUTF-8バイト配列に変換
-      const encoder = new TextEncoder();
-      const bytes = encoder.encode(str);
-      // バイト配列を文字列に変換（ループを使用して安全に処理）
-      let binaryString = "";
-      for (let i = 0; i < bytes.length; i++) {
-        binaryString += String.fromCharCode(bytes[i]);
-      }
-      return btoa(binaryString);
-    } catch (error) {
-      console.error("Base64エンコードエラー:", error);
-      // フォールバック: encodeURIComponentを使用してUTF-8エンコードしてからbase64
-      try {
-        const utf8 = encodeURIComponent(str);
-        const binary = utf8.replace(/%([0-9A-F]{2})/g, (match, hex) => {
-          return String.fromCharCode(parseInt(hex, 16));
-        });
-        return btoa(binary);
-      } catch (fallbackError) {
-        console.error("フォールバックエンコードエラー:", fallbackError);
-        // 最終的なフォールバック: 空文字列を返す
-        return "";
-      }
-    }
-  };
+  }, [router, productId, session, status]);
 
   const fetchProduct = async () => {
     try {
-      const adminData = localStorage.getItem("admin") || "";
-      // base64エンコードしてヘッダーに設定（日本語対応）
-      const encodedAdminData = adminData ? encodeToBase64(adminData) : "";
-      
-      const response = await fetch(`/api/admin/products/${productId}`, {
-        headers: {
-          "x-admin-data": encodedAdminData,
-        },
-      });
+      const response = await fetch(`/api/admin/products/${productId}`);
 
       if (!response.ok) {
         throw new Error("商品の取得に失敗しました");
@@ -147,15 +120,10 @@ export default function EditProductPage() {
         }
       }
 
-      const adminData = localStorage.getItem("admin") || "";
-      // base64エンコードしてヘッダーに設定（日本語対応）
-      const encodedAdminData = adminData ? encodeToBase64(adminData) : "";
-      
       const response = await fetch(`/api/admin/products/${productId}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          "x-admin-data": encodedAdminData,
         },
         body: JSON.stringify({
           slug: formData.slug.trim(),

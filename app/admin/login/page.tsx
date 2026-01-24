@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { signIn } from "next-auth/react";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
@@ -17,27 +18,49 @@ export default function AdminLoginPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/auth/admin/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
+      const result = await signIn("credentials", {
+        redirect: false,
+        email,
+        password,
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "ログインに失敗しました");
+      if (!result || result.error) {
+        throw new Error(result?.error || "ログインに失敗しました");
       }
 
-      // 管理者情報をlocalStorageに保存
-      localStorage.setItem("admin", JSON.stringify(data.admin));
-      router.push("/admin");
-      router.refresh();
+      // セッションが確立されるまで待機（複数回チェック）
+      let session = null;
+      let attempts = 0;
+      const maxAttempts = 15;
+      
+      while (attempts < maxAttempts) {
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        const sessionResponse = await fetch("/api/auth/session", {
+          cache: "no-store",
+          credentials: "include",
+        });
+        session = await sessionResponse.json();
+        
+        if (session?.user && session.user.role === "admin") {
+          // セッションが確立されたことを確認
+          break;
+        }
+        attempts++;
+      }
+
+      if (!session?.user || session.user.role !== "admin") {
+        // 管理者でない場合はログアウトしてエラーを表示
+        await fetch("/api/auth/signout", { method: "POST" });
+        throw new Error("管理者権限が必要です");
+      }
+
+      // セッション確立を確実にするため、少し待機してからリダイレクト
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      
+      // 完全なリロードでセッションを確実に反映
+      window.location.href = "/admin";
     } catch (error) {
       setError(error instanceof Error ? error.message : "ログインに失敗しました");
-    } finally {
       setIsLoading(false);
     }
   };

@@ -207,7 +207,7 @@ export default function Header() {
             </>
           ) : (
             <>
-              <span className="text-slate-400">|</span>
+              {/* <span className="text-slate-400">|</span> */}
               <Link href="/login" className="text-slate-600 hover:text-slate-900">
                 ログイン
               </Link>

@@ -39,6 +39,10 @@ export const authOptions: NextAuthOptions = {
           throw new Error("メールアドレスまたはパスワードが正しくありません");
         }
 
+        // 管理者ログインページからのアクセスの場合は管理者権限をチェック
+        // ただし、通常のログインでも管理者はログイン可能にする
+        // （管理者ログインページと通常ログインページの両方で使用可能）
+
         return {
           id: user.id,
           email: user.email,

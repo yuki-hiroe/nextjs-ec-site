@@ -525,7 +525,7 @@ export default function StylistDashboardPage() {
                     });
                   }
                 }}
-                className="rounded-full border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-900 transition hover:border-slate-900"
+                className="flex-1 rounded-full border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-900 transition hover:border-slate-900"
               >
                 キャンセル
               </button>

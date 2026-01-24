@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 
 type AuditLog = {
   id: string;
@@ -31,20 +32,29 @@ export default function AdminAuditLogsPage() {
   });
   const [total, setTotal] = useState(0);
 
+  const { data: session, status } = useSession();
+
   useEffect(() => {
-    // 管理者認証チェック
-    const admin = localStorage.getItem("admin");
-    if (!admin) {
+    // NextAuthセッションで管理者認証を確認
+    if (status === "loading") {
+      return; // セッション読み込み中
+    }
+
+    if (status === "unauthenticated" || !session?.user) {
+      router.push("/admin/login");
+      return;
+    }
+
+    if (session.user.role !== "admin") {
       router.push("/admin/login");
       return;
     }
 
     fetchLogs();
-  }, [router, filters]);
+  }, [router, filters, session, status]);
 
   const fetchLogs = async () => {
     try {
-      const adminData = JSON.parse(localStorage.getItem("admin") || "{}");
       const params = new URLSearchParams();
       if (filters.action) params.append("action", filters.action);
       if (filters.targetType) params.append("targetType", filters.targetType);
@@ -56,7 +66,6 @@ export default function AdminAuditLogsPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ adminId: adminData.id }),
       });
       const data = await response.json();
       if (data && !data.error) {
@@ -217,7 +226,10 @@ export default function AdminAuditLogsPage() {
                       詳細を表示
                     </summary>
                     <pre className="mt-2 p-2 bg-slate-100 rounded text-xs overflow-x-auto">
-                      {JSON.stringify(log.details, null, 2)}
+                      {JSON.stringify(log.details, null, 2)
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;')
+                        .replace(/&/g, '&amp;')}
                     </pre>
                   </details>
                 )}

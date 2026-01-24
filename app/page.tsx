@@ -139,11 +139,11 @@ export default async function HomePage() {
     <div className="space-y-10">
         <section className="rounded-3xl bg-slate-900 px-6 py-12 sm:px-10 sm:py-16 text-white shadow-xl">
           <p className="text-3xl font-semibold text-white">
-            日常を少し上質にする
-            <span className="text-slate-300"> ミニマルセレクトショップ</span>
+            スタイリストとつくる、
+            <span className="text-slate-300"> 自分だけのクローゼット</span>
           </p>
           <p className="mt-4 max-w-2xl text-base text-slate-200">
-            国内外の独立ブランドからセレクトしたバッグ、フットウェア、テックアクセサリをオンラインでお届けします。
+            世界に一つだけのあなただけの専用ファッションサイトです。
           </p>
           <div className="mt-8 flex flex-col gap-3 text-sm font-semibold sm:flex-row">
             <Link

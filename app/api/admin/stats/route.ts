@@ -1,9 +1,20 @@
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
+  // 管理者認証チェック
+  const session = await getServerSession(authOptions);
+  
+  if (!session || !session.user || session.user.role !== "admin") {
+    return NextResponse.json(
+      { error: "管理者権限が必要です" },
+      { status: 403 }
+    );
+  }
   try {
-    const [products, orders, inquiries, stylists, pendingApplications, pendingTestimonials] = await Promise.all([
+    const [products, orders, inquiries, stylists, pendingApplications, approvedTestimonials] = await Promise.all([
       prisma.product.count(),
       prisma.order.count(),
       prisma.inquiry.count(),
@@ -16,9 +27,9 @@ export async function GET() {
             where: { status: "pending" },
           })
         : Promise.resolve(0),
-      // 承認待ちのお客様の声数
+      // 承認済みのお客様の声数
       prisma.testimonial.count({
-        where: { isApproved: false },
+        where: { isApproved: true },
       }),
     ]);
 
@@ -28,7 +39,7 @@ export async function GET() {
       inquiries,
       stylists,
       pendingApplications,
-      pendingTestimonials,
+      approvedTestimonials,
     });
   } catch (error) {
     console.error("統計情報取得エラー:", error);

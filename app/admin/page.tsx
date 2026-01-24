@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useSession, signOut } from "next-auth/react";
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -13,45 +14,74 @@ export default function AdminDashboardPage() {
     inquiries: 0,
     stylists: 0,
     pendingApplications: 0,
-    pendingTestimonials: 0,
+    approvedTestimonials: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
 
+  const fetchStats = async () => {
+    try {
+      const response = await fetch("/api/admin/stats");
+      const data = await response.json();
+      if (data && !data.error) {
+        setStats({
+          products: data.products ?? 0,
+          orders: data.orders ?? 0,
+          inquiries: data.inquiries ?? 0,
+          stylists: data.stylists ?? 0,
+          pendingApplications: data.pendingApplications ?? 0,
+          approvedTestimonials: data.approvedTestimonials ?? 0,
+        });
+      }
+      setIsLoading(false);
+    } catch (error) {
+      console.error("統計情報取得エラー:", error);
+      setIsLoading(false);
+    }
+  };
+
+  const { data: session, status } = useSession();
+
   useEffect(() => {
-    // 管理者情報を確認
-    const adminData = localStorage.getItem("admin");
-    if (!adminData) {
+    // NextAuthセッションで管理者認証を確認
+    if (status === "loading") {
+      return; // セッション読み込み中
+    }
+
+    if (status === "unauthenticated" || !session?.user) {
       router.push("/admin/login");
       return;
     }
 
-    setAdmin(JSON.parse(adminData));
+    if (session.user.role !== "admin") {
+      router.push("/admin/login");
+      return;
+    }
+
+    // セッションから管理者情報を設定
+    setAdmin({
+      id: session.user.id,
+      email: session.user.email,
+      name: session.user.name,
+      role: session.user.role,
+    });
 
     // 統計情報を取得
-    fetch("/api/admin/stats")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && !data.error) {
-          setStats({
-            products: data.products ?? 0,
-            orders: data.orders ?? 0,
-            inquiries: data.inquiries ?? 0,
-            stylists: data.stylists ?? 0,
-            pendingApplications: data.pendingApplications ?? 0,
-            pendingTestimonials: data.pendingTestimonials ?? 0,
-          });
-        }
-        setIsLoading(false);
-      })
-      .catch((error) => {
-        console.error("統計情報取得エラー:", error);
-        setIsLoading(false);
-      });
-  }, [router]);
+    fetchStats();
 
-  const handleLogout = () => {
-    localStorage.removeItem("admin");
-    router.push("/admin/login");
+    // ページがフォーカスされた時に統計情報を再取得
+    const handleFocus = () => {
+      fetchStats();
+    };
+
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [router, session, status]);
+
+  const handleLogout = async () => {
+    await signOut({ callbackUrl: "/admin/login" });
   };
 
   if (isLoading) {
@@ -172,7 +202,7 @@ export default function AdminDashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-slate-600">お客様の声</p>
-              <p className="mt-2 text-3xl font-semibold text-slate-900">{stats.pendingTestimonials}</p>
+              <p className="mt-2 text-3xl font-semibold text-slate-900">{stats.approvedTestimonials}</p>
             </div>
             <div className="rounded-full bg-slate-100 p-3">
               <svg className="h-6 w-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -185,15 +215,6 @@ export default function AdminDashboardPage() {
               </svg>
             </div>
           </div>
-          {stats.pendingTestimonials > 0 && (
-            <div className="absolute top-4 right-4 flex items-center gap-2">
-              <span className="inline-flex h-2 w-2 rounded-full bg-amber-500 animate-ping opacity-75" />
-              <span className="inline-flex h-2 w-2 rounded-full bg-amber-500" />
-              <span className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
-                承認待ち {stats.pendingTestimonials}
-              </span>
-            </div>
-          )}
         </Link>
       </div>
 
@@ -283,19 +304,8 @@ export default function AdminDashboardPage() {
               <p className="font-medium text-slate-900">お客様の声管理</p>
               <p className="text-sm text-slate-600">
                 お客様の声の承認・管理
-                {stats.pendingTestimonials > 0 && (
-                  <span className="ml-2 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
-                    承認待ち {stats.pendingTestimonials}
-                  </span>
-                )}
               </p>
             </div>
-            {stats.pendingTestimonials > 0 && (
-              <div className="absolute top-4 right-4 flex items-center gap-2">
-                <span className="inline-flex h-2 w-2 rounded-full bg-amber-500 animate-ping opacity-75" />
-                <span className="inline-flex h-2 w-2 rounded-full bg-amber-500" />
-              </div>
-            )}
           </Link>
 
           <Link

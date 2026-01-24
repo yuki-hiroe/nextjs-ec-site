@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 
 export default function NewStylistPage() {
   const router = useRouter();
@@ -19,12 +20,24 @@ export default function NewStylistPage() {
     isActive: true,
   });
 
+  const { data: session, status } = useSession();
+
   useEffect(() => {
-    const admin = localStorage.getItem("admin");
-    if (!admin) {
-      router.push("/admin/login");
+    // NextAuthセッションで管理者認証を確認
+    if (status === "loading") {
+      return; // セッション読み込み中
     }
-  }, [router]);
+
+    if (status === "unauthenticated" || !session?.user) {
+      router.push("/admin/login");
+      return;
+    }
+
+    if (session.user.role !== "admin") {
+      router.push("/admin/login");
+      return;
+    }
+  }, [router, session, status]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>

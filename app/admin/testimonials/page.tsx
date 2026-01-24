@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 
 type Testimonial = {
   id: string;
@@ -26,53 +27,31 @@ export default function AdminTestimonialsPage() {
   const [filter, setFilter] = useState<"all" | "approved" | "pending">("all");
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
 
+  const { data: session, status } = useSession();
+
   useEffect(() => {
-    const admin = localStorage.getItem("admin");
-    if (!admin) {
+    // NextAuthセッションで管理者認証を確認
+    if (status === "loading") {
+      return; // セッション読み込み中
+    }
+
+    if (status === "unauthenticated" || !session?.user) {
+      router.push("/admin/login");
+      return;
+    }
+
+    if (session.user.role !== "admin") {
       router.push("/admin/login");
       return;
     }
 
     fetchTestimonials();
-  }, [router, filter]);
-
-  // UTF-8文字列をbase64エンコードするヘルパー関数
-  const encodeToBase64 = (str: string): string => {
-    if (!str) return "";
-    try {
-      const encoder = new TextEncoder();
-      const bytes = encoder.encode(str);
-      let binaryString = "";
-      for (let i = 0; i < bytes.length; i++) {
-        binaryString += String.fromCharCode(bytes[i]);
-      }
-      return btoa(binaryString);
-    } catch (error) {
-      console.error("Base64エンコードエラー:", error);
-      try {
-        const utf8 = encodeURIComponent(str);
-        const binary = utf8.replace(/%([0-9A-F]{2})/g, (match, hex) => {
-          return String.fromCharCode(parseInt(hex, 16));
-        });
-        return btoa(binary);
-      } catch (fallbackError) {
-        console.error("フォールバックエンコードエラー:", fallbackError);
-        return "";
-      }
-    }
-  };
+  }, [router, filter, session, status]);
 
   const fetchTestimonials = async () => {
     try {
-      const adminData = localStorage.getItem("admin") || "";
-      const encodedAdminData = adminData ? encodeToBase64(adminData) : "";
-
       const statusParam = filter === "all" ? "" : `?status=${filter}`;
-      const response = await fetch(`/api/admin/testimonials${statusParam}`, {
-        headers: {
-          "x-admin-data": encodedAdminData,
-        },
-      });
+      const response = await fetch(`/api/admin/testimonials${statusParam}`);
 
       if (!response.ok) {
         throw new Error("お客様の声の取得に失敗しました");
@@ -90,14 +69,10 @@ export default function AdminTestimonialsPage() {
   const handleApprove = async (id: string, isApproved: boolean) => {
     setIsProcessing(id);
     try {
-      const adminData = localStorage.getItem("admin") || "";
-      const encodedAdminData = adminData ? encodeToBase64(adminData) : "";
-
       const response = await fetch(`/api/admin/testimonials/${id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          "x-admin-data": encodedAdminData,
         },
         body: JSON.stringify({ isApproved }),
       });
@@ -122,14 +97,8 @@ export default function AdminTestimonialsPage() {
 
     setIsProcessing(id);
     try {
-      const adminData = localStorage.getItem("admin") || "";
-      const encodedAdminData = adminData ? encodeToBase64(adminData) : "";
-
       const response = await fetch(`/api/admin/testimonials/${id}`, {
         method: "DELETE",
-        headers: {
-          "x-admin-data": encodedAdminData,
-        },
       });
 
       if (!response.ok) {

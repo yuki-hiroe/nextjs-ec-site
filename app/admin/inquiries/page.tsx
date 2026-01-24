@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 
 type Reply = {
   id: string;
@@ -47,20 +48,29 @@ export default function AdminInquiriesPage() {
   const [expandedInquiry, setExpandedInquiry] = useState<string | null>(null);
   const [replies, setReplies] = useState<Record<string, Reply[]>>({});
 
+  const { data: session, status } = useSession();
+
   useEffect(() => {
-    // 管理者認証チェック
-    const admin = localStorage.getItem("admin");
-    if (!admin) {
+    // NextAuthセッションで管理者認証を確認
+    if (status === "loading") {
+      return; // セッション読み込み中
+    }
+
+    if (status === "unauthenticated" || !session?.user) {
+      router.push("/admin/login");
+      return;
+    }
+
+    if (session.user.role !== "admin") {
       router.push("/admin/login");
       return;
     }
 
     fetchInquiries();
-  }, [router, statusFilter, searchTerm]);
+  }, [router, statusFilter, searchTerm, session, status]);
 
   const fetchInquiries = async () => {
     try {
-      const adminData = JSON.parse(localStorage.getItem("admin") || "{}");
       const params = new URLSearchParams();
       if (statusFilter !== "all") params.append("status", statusFilter);
       if (searchTerm) params.append("search", searchTerm);
@@ -70,7 +80,6 @@ export default function AdminInquiriesPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ adminId: adminData.id }),
       });
       const data = await response.json();
       if (data && !data.error) {
