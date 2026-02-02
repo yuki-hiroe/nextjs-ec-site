@@ -1,5 +1,6 @@
 "use client";
 
+import { useSession, signOut } from "next-auth/react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -37,6 +38,7 @@ type Stylist = {
 
 export default function StylistDashboardPage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [stylist, setStylist] = useState<Stylist | null>(null);
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -58,57 +60,57 @@ export default function StylistDashboardPage() {
   });
 
   useEffect(() => {
-    // スタイリスト情報を確認
-    const stylistData = localStorage.getItem("stylist");
-    if (!stylistData) {
+    if (status === "loading") return;
+    if (status !== "authenticated" || session?.user?.role !== "stylist" || !session?.user?.id) {
       router.push("/stylist/login");
       return;
     }
 
-    const parsed = JSON.parse(stylistData);
-    setStylist(parsed);
-    
-    // 編集フォームの初期値を設定
-    setEditFormData({
-      name: parsed.name || "",
-      nameEn: parsed.nameEn || "",
-      email: parsed.email || "",
-      bio: parsed.bio || "",
-      specialties: Array.isArray(parsed.specialties) ? parsed.specialties.join(", ") : "",
-      image: parsed.image || "",
-      password: "",
-    });
+    const stylistId = session.user.id;
 
-    // 自分のお問い合わせを取得
-    fetch(`/api/inquiries?stylistId=${parsed.id}`)
+    // スタイリスト詳細を取得
+    fetch(`/api/stylists/${stylistId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.error || !data) {
+          setIsLoading(false);
+          return;
+        }
+        const formatted = {
+          ...data,
+          specialties: Array.isArray(data.specialties) ? data.specialties : [],
+        };
+        setStylist(formatted);
+        setEditFormData({
+          name: data.name || "",
+          nameEn: data.nameEn || "",
+          email: data.email || "",
+          bio: data.bio || "",
+          specialties: Array.isArray(data.specialties) ? data.specialties.join(", ") : "",
+          image: data.image || "",
+          password: "",
+        });
+        setIsLoading(false);
+      })
+      .catch(() => setIsLoading(false));
+
+    // 自分のお問い合わせを取得（セッションのスタイリストIDで取得）
+    fetch(`/api/inquiries?stylistId=${stylistId}`)
       .then((res) => res.json())
       .then((data) => {
         if (data && !data.error) {
           setInquiries(data);
-          // 各お問い合わせの返信を取得
           data.forEach((inquiry: Inquiry) => {
             fetchReplies(inquiry.id);
           });
         }
-        setIsLoading(false);
       })
-      .catch((error) => {
-        console.error("お問い合わせ取得エラー:", error);
-        setIsLoading(false);
-      });
+      .catch((error) => console.error("お問い合わせ取得エラー:", error));
 
-    // 未読返信の件数を取得
-    fetchUnreadCount(parsed.id);
-    
-    // 定期的に未読件数を更新（30秒ごと）
-    const interval = setInterval(() => {
-      if (parsed.id) {
-        fetchUnreadCount(parsed.id);
-      }
-    }, 30000);
-
+    fetchUnreadCount(stylistId);
+    const interval = setInterval(() => fetchUnreadCount(stylistId), 30000);
     return () => clearInterval(interval);
-  }, [router]);
+  }, [status, session?.user?.id, session?.user?.role, router]);
 
   const fetchReplies = async (inquiryId: string) => {
     try {
@@ -206,12 +208,9 @@ export default function StylistDashboardPage() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("stylist");
-    // カスタムイベントを発火してヘッダーを更新
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event("stylistLogout"));
-    }
+    signOut({ redirect: false });
     router.push("/stylist/login");
+    router.refresh();
   };
 
   const handleStatusUpdate = async (inquiryId: string, newStatus: string) => {
@@ -253,7 +252,6 @@ export default function StylistDashboardPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          stylistId: stylist.id,
           name: editFormData.name,
           nameEn: editFormData.nameEn || null,
           email: editFormData.email,
@@ -272,14 +270,11 @@ export default function StylistDashboardPage() {
         return;
       }
 
-      // 更新されたスタイリスト情報を保存
       const updatedStylist = data.stylist;
-      localStorage.setItem("stylist", JSON.stringify(updatedStylist));
-      setStylist(updatedStylist);
-      // カスタムイベントを発火してヘッダーを更新
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event("stylistLogin"));
-      }
+      setStylist({
+        ...updatedStylist,
+        specialties: Array.isArray(updatedStylist.specialties) ? updatedStylist.specialties : [],
+      });
       setIsEditing(false);
       setEditFormData((prev) => ({ ...prev, password: "" })); // パスワードフィールドをクリア
       alert("プロフィールを更新しました");

@@ -1,15 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 // スタイリストの未読返信（ユーザーからの返信）の件数を取得
 export async function GET(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
     const { searchParams } = new URL(request.url);
-    const stylistId = searchParams.get("stylistId");
+    const stylistId =
+      session?.user?.role === "stylist"
+        ? session.user.id
+        : searchParams.get("stylistId");
 
     if (!stylistId) {
       return NextResponse.json(
-        { error: "スタイリストIDが必要です" },
+        { error: "スタイリストIDが必要です。ログインしてください。" },
         { status: 400 }
       );
     }

@@ -11,81 +11,22 @@ export default function Header() {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [stylist, setStylist] = useState<{ name: string; email: string } | null>(null);
   const isAuthenticated = status === "authenticated";
   const user = session?.user;
-  
+  // スタイリストは NextAuth セッションで判定（localStorage 廃止）
+  const stylist =
+    session?.user?.role === "stylist"
+      ? { name: session.user.name || "", email: session.user.email || "" }
+      : null;
+
   // スタイリストダッシュボードページかどうかを判定（/stylistsは除外）
   const isStylistDashboard = pathname?.startsWith("/stylist") && !pathname?.startsWith("/stylists");
   // 管理者画面ページかどうかを判定
   const isAdminDashboard = pathname?.startsWith("/admin");
   // 制限されたページ（スタイリストダッシュボードまたは管理者画面）かどうかを判定
   const isRestrictedPage = isStylistDashboard || isAdminDashboard;
-  
-  // スタイリスト情報を取得する関数
-  const fetchStylistData = () => {
-    if (typeof window !== "undefined") {
-      const stylistData = localStorage.getItem("stylist");
-      if (stylistData) {
-        try {
-          const parsed = JSON.parse(stylistData);
-          setStylist({ name: parsed.name || "", email: parsed.email || "" });
-        } catch (error) {
-          console.error("スタイリスト情報の解析エラー:", error);
-          setStylist(null);
-        }
-      } else {
-        setStylist(null);
-      }
-    }
-  };
-
-  // スタイリスト情報を取得（初回マウント時）
-  useEffect(() => {
-    fetchStylistData();
-  }, []);
-
-  // スタイリストログイン/ログアウトイベントをリッスン
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      // カスタムイベントでスタイリスト情報を更新
-      const handleStylistUpdate = () => {
-        fetchStylistData();
-      };
-      window.addEventListener("stylistLogin", handleStylistUpdate);
-      window.addEventListener("stylistLogout", handleStylistUpdate);
-      
-      // storageイベントもリッスン（他のタブでの変更を検知）
-      const handleStorageChange = (e: StorageEvent) => {
-        if (e.key === "stylist") {
-          fetchStylistData();
-        }
-      };
-      window.addEventListener("storage", handleStorageChange);
-
-      return () => {
-        window.removeEventListener("stylistLogin", handleStylistUpdate);
-        window.removeEventListener("stylistLogout", handleStylistUpdate);
-        window.removeEventListener("storage", handleStorageChange);
-      };
-    }
-  }, []);
 
   const handleLogout = async () => {
-    // スタイリストがログインしている場合は、localStorageから削除
-    if (stylist) {
-      localStorage.removeItem("stylist");
-      // カスタムイベントを発火してヘッダーを更新
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event("stylistLogout"));
-      }
-      setStylist(null);
-      router.push("/");
-      router.refresh();
-      setIsMenuOpen(false);
-      return;
-    }
-    // 通常のユーザーの場合は、next-authのログアウト
     await signOut({ redirect: false });
     router.push("/");
     router.refresh();
@@ -96,8 +37,24 @@ export default function Header() {
     setIsMenuOpen(false);
   };
 
-  // 未読返信の件数を取得
+  // 未読返信の件数を取得（ユーザー: お問い合わせ未読 / スタイリスト: 返信未読）
   useEffect(() => {
+    if (session?.user?.role === "stylist") {
+      const fetchUnreadCount = async () => {
+        try {
+          const response = await fetch("/api/stylists/unread-replies");
+          const data = await response.json();
+          if (data && !data.error) {
+            setUnreadCount(data.unreadCount || 0);
+          }
+        } catch (error) {
+          console.error("未読返信件数取得エラー:", error);
+        }
+      };
+      fetchUnreadCount();
+      const interval = setInterval(fetchUnreadCount, 5000);
+      return () => clearInterval(interval);
+    }
     if (isAuthenticated && user?.email) {
       const fetchUnreadCount = async () => {
         try {
@@ -114,22 +71,12 @@ export default function Header() {
       };
 
       fetchUnreadCount();
-      
-      // 定期的に未読件数を更新（5秒ごと）
       const interval = setInterval(fetchUnreadCount, 5000);
-      
-      // ページがフォーカスされたときに即座に更新
-      const handleFocus = () => {
-        fetchUnreadCount();
-      };
+      const handleFocus = () => fetchUnreadCount();
       window.addEventListener("focus", handleFocus);
-      
-      // カスタムイベントで未読件数を更新（お問い合わせページから通知）
-      const handleUnreadUpdate = () => {
-        fetchUnreadCount();
-      };
+      const handleUnreadUpdate = () => fetchUnreadCount();
       window.addEventListener("unreadCountUpdate", handleUnreadUpdate);
-      
+
       return () => {
         clearInterval(interval);
         window.removeEventListener("focus", handleFocus);
@@ -138,7 +85,7 @@ export default function Header() {
     } else {
       setUnreadCount(0);
     }
-  }, [isAuthenticated, user?.email]);
+  }, [isAuthenticated, user?.email, session?.user?.role]);
 
   return (
     <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur">

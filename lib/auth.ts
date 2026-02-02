@@ -8,6 +8,7 @@ export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
+      id: "credentials",
       name: "Credentials",
       credentials: {
         email: { label: "Email", type: "email" },
@@ -39,16 +40,58 @@ export const authOptions: NextAuthOptions = {
           throw new Error("メールアドレスまたはパスワードが正しくありません");
         }
 
-        // 管理者ログインページからのアクセスの場合は管理者権限をチェック
-        // ただし、通常のログインでも管理者はログイン可能にする
-        // （管理者ログインページと通常ログインページの両方で使用可能）
-
         return {
           id: user.id,
           email: user.email,
           name: user.name,
           role: user.role,
           image: user.image,
+        };
+      },
+    }),
+    CredentialsProvider({
+      id: "stylist",
+      name: "Stylist",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
+          throw new Error("メールアドレスとパスワードを入力してください");
+        }
+
+        const stylist = await prisma.stylist.findUnique({
+          where: { email: credentials.email },
+        });
+
+        if (!stylist) {
+          throw new Error("メールアドレスまたはパスワードが正しくありません");
+        }
+
+        if (!stylist.password) {
+          throw new Error("パスワードが設定されていません。管理者に問い合わせてください。");
+        }
+
+        if (!stylist.isActive) {
+          throw new Error("このアカウントは無効化されています");
+        }
+
+        const isValidPassword = await bcrypt.compare(
+          credentials.password,
+          stylist.password
+        );
+
+        if (!isValidPassword) {
+          throw new Error("メールアドレスまたはパスワードが正しくありません");
+        }
+
+        return {
+          id: stylist.id,
+          email: stylist.email,
+          name: stylist.name,
+          role: "stylist",
+          image: stylist.image ?? undefined,
         };
       },
     }),

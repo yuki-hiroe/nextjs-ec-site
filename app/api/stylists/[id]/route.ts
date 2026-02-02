@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
@@ -46,19 +48,15 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
-    const body = await request.json();
-    const { name, nameEn, email, bio, specialties, image, password } = body;
-
-    // 認証チェック（リクエストヘッダーからスタイリストIDを取得）
-    // 実際の実装では、セッションやトークンから取得する必要があります
-    // ここでは簡易的にリクエストボディから取得
-    const stylistId = body.stylistId;
-    if (stylistId !== id) {
+    const session = await getServerSession(authOptions);
+    if (!session?.user || session.user.role !== "stylist" || session.user.id !== id) {
       return NextResponse.json(
-        { error: "自分のプロフィールのみ編集できます" },
-        { status: 403 }
+        { error: "認証が必要です。自分のプロフィールのみ編集できます。" },
+        { status: 401 }
       );
     }
+    const body = await request.json();
+    const { name, nameEn, email, bio, specialties, image, password } = body;
 
     // 更新データを準備
     const updateData: any = {};

@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(request: NextRequest) {
@@ -64,9 +66,13 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get("userId");
-    const stylistId = searchParams.get("stylistId");
+    const queryStylistId = searchParams.get("stylistId");
+    // スタイリストログイン時はセッションのIDのみ使用（クエリは無視）
+    const stylistId =
+      session?.user?.role === "stylist" ? session.user.id : queryStylistId;
 
     const inquiries = await prisma.inquiry.findMany({
       where: userId

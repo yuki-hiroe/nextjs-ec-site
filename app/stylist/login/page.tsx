@@ -1,5 +1,6 @@
 "use client";
 
+import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -17,28 +18,24 @@ export default function StylistLoginPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/auth/stylist/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
+      const result = await signIn("stylist", {
+        email,
+        password,
+        redirect: false,
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "ログインに失敗しました");
+      if (result?.error) {
+        throw new Error(result.error);
       }
 
-      // スタイリスト情報をlocalStorageに保存
-      localStorage.setItem("stylist", JSON.stringify(data.stylist));
-      // カスタムイベントを発火してヘッダーを更新
-      window.dispatchEvent(new Event("stylistLogin"));
-      router.push("/stylist");
-      router.refresh();
-    } catch (error) {
-      setError(error instanceof Error ? error.message : "ログインに失敗しました");
+      if (result?.ok) {
+        router.push("/stylist");
+        router.refresh();
+      } else {
+        throw new Error("ログインに失敗しました");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "ログインに失敗しました");
     } finally {
       setIsLoading(false);
     }
