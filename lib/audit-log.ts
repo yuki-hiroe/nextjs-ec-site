@@ -1,3 +1,4 @@
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export type AuditAction = "delete" | "suspend" | "activate" | "update";
@@ -50,7 +51,7 @@ export async function createAuditLog(params: CreateAuditLogParams) {
 /**
  * リクエストからIPアドレスとUser Agentを取得
  */
-export function getRequestInfo(request: Request) {
+export function getRequestInfo(request: NextRequest) {
   const ipAddress =
     request.headers.get("x-forwarded-for")?.split(",")[0] ||
     request.headers.get("x-real-ip") ||

@@ -20,7 +20,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Intercambio",
-  description: "日常を少し上質にするミニマルセレクトショップ",
+  description: "スタイリストとつくる、自分だけのクローゼット",
 };
 
 export default function RootLayout({

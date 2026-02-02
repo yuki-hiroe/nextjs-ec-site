@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyAdmin } from "@/lib/admin-auth";
 import { createAuditLog, getRequestInfo } from "@/lib/audit-log";
 
 // ユーザー一覧を取得
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const authResult = await verifyAdmin(request);
     if (authResult.error) {

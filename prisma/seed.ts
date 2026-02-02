@@ -10,9 +10,9 @@ if (!databaseUrl) {
 }
 
 // 接続タイプをログ出力（デバッグ用）
-const connectionType = databaseUrl.includes("pooler") ? "接続プーラー" : "ダイレクト接続";
-console.log(`データベース接続: ${connectionType}`);
-console.log(`接続URL（最初の50文字）: ${databaseUrl.substring(0, 50)}...`);
+// const connectionType = databaseUrl.includes("pooler") ? "接続プーラー" : "ダイレクト接続";
+// console.log(`データベース接続: ${connectionType}`);
+// console.log(`接続URL（最初の50文字）: ${databaseUrl.substring(0, 50)}...`);
 
 const prisma = new PrismaClient({
   datasources: {

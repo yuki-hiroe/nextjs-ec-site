@@ -1,9 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
 
 // 管理者用：すべてのお客様の声を取得（承認待ち含む）
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const authResult = await isAdminAuthenticated(request);
   if (!authResult.authenticated) {
     return authResult.response;

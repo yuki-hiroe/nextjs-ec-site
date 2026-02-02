@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyAdmin } from "@/lib/admin-auth";
 import { createAuditLog, getRequestInfo } from "@/lib/audit-log";
 
 // 管理者用：注文ステータスを更新
 export async function PATCH(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ orderNumber: string }> }
 ) {
   try {

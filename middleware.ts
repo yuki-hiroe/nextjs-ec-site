@@ -12,6 +12,7 @@ export default withAuth(
     // 管理者ページは管理者のみアクセス可能
     if (req.nextUrl.pathname.startsWith("/admin")) {
       if (req.nextauth.token?.role !== "admin") {
+        // リダイレクト先を絶対URLで指定する
         return NextResponse.redirect(new URL("/", req.url))
       }
     }

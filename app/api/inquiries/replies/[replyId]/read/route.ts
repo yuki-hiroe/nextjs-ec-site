@@ -1,9 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 // 返信を既読にする
 export async function PATCH(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ replyId: string }> }
 ) {
   try {
