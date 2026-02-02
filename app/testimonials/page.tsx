@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import TestimonialForm from "@/components/TestimonialForm";
 import { prisma } from "@/lib/prisma";

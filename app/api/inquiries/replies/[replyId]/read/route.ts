@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 
 // 返信を既読にする
 export async function PATCH(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ replyId: string }> }
 ) {
   try {

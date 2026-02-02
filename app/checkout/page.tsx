@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { useCart } from "@/contexts/CartContext";
-import { useInventory } from "@/contexts/InventoryContext";
 import { useSession } from "next-auth/react";
 
 type PaymentMethod = "credit" | "bank" | "convenience";
@@ -13,7 +12,6 @@ type PaymentMethod = "credit" | "bank" | "convenience";
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, getTotalPrice, clearCart } = useCart();
-  const { reduceStock, checkStock } = useInventory();
   const { data: session, status } = useSession();
   const isAuthenticated = status === "authenticated";
   const isLoading = status === "loading";

@@ -1,10 +1,7 @@
 "use client";
-
-import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { useInventory } from "@/contexts/InventoryContext";
 import { useSession } from "next-auth/react";
@@ -13,9 +10,8 @@ export default function CartPage() {
   const router = useRouter();
   const { items, updateQuantity, removeFromCart, getTotalPrice, clearCart } = useCart();
   const { getStock, checkStock } = useInventory();
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const isAuthenticated = status === "authenticated";
-  const isLoading = status === "loading";
 
   // ログイン状態をチェック（チェックアウトボタンクリック時）
   const handleCheckout = () => {

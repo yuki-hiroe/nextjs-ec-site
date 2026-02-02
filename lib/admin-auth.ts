@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 
 /**
  * NextAuthセッションから管理者情報を取得して検証
  * 新しい実装：NextAuthのセッションを使用
  */
-export async function verifyAdmin(request: NextRequest) {
+export async function verifyAdmin(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
@@ -56,7 +55,7 @@ export async function verifyAdmin(request: NextRequest) {
  * NextAuthセッションから管理者情報を取得して検証（isAdminAuthenticatedの代替）
  * 後方互換性のため、同じインターフェースを維持
  */
-export async function isAdminAuthenticated(request: NextRequest) {
+export async function isAdminAuthenticated(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
