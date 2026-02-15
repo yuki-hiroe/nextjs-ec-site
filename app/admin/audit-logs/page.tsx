@@ -25,15 +25,16 @@ export default function AdminAuditLogsPage() {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filters, setFilters] = useState({
-    action: "",
-    targetType: "",
-    targetEmail: "",
-    performedByEmail: "",
+    action: "", // どんな操作をしたか（例：削除、編集）
+    targetType: "", // 操作の対象は何か（例：ユーザー、商品）
+    targetEmail: "", // 操作された相手のメールアドレス
+    performedByEmail: "", // 操作を「実行した」管理者のメールアドレス
   });
   const [total, setTotal] = useState(0);
 
   const { data: session, status } = useSession();
 
+  // 管理者としてログインしている人だけが、ログ（記録）を見られるようにする
   useEffect(() => {
     // NextAuthセッションで管理者認証を確認
     if (status === "loading") {
@@ -50,8 +51,9 @@ export default function AdminAuditLogsPage() {
       return;
     }
 
+    // ログを取得
     fetchLogs();
-  }, [router, filters, session, status]);
+  }, [router, filters, session, status]); //ログイン状態が変わったり、検索条件（filters）が変わったりした時に、もう一度このチェックと取得をやり直す
 
   const fetchLogs = async () => {
     try {

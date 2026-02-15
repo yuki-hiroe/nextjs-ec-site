@@ -67,16 +67,19 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
       return false;
     }
   }, []);
-
+  // 在庫を取得する『在庫取得機』
+  // 在庫が取得できなかった場合は0を返す
   const getStock = (productId: string): number => {
     return inventory[productId] ?? 0;
   };
-
+  // 注文しようとしている数が、在庫の範囲内かどうかを判定する『判定機』
+  // true: 在庫が足りている、false: 在庫が足りていない
   const checkStock = (productId: string, quantity: number): boolean => {
     const currentStock = getStock(productId);
     return currentStock >= quantity;
   };
-
+  // 在庫を減らす『在庫減少機』
+  // 在庫が減らせなかった場合はfalseを返す
   const reduceStock = async (productId: string, quantity: number): Promise<boolean> => {
     setIsLoading(true);
     try {
@@ -86,7 +89,8 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
     }
   };
-
+  // 在庫を更新する『在庫更新機』
+  // 在庫が更新できなかった場合はfalseを返す
   const refreshStock = async (productId: string): Promise<void> => {
     const stock = await fetchStock(productId);
     setInventory((prev) => ({

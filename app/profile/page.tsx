@@ -1,10 +1,9 @@
-"use client";
-
-import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { getServerSession } from "next-auth"; 
+import { authOptions } from "@/lib/auth"; 
+import { prisma } from "@/lib/prisma"; 
+import { redirect } from "next/navigation";
 
 type Stylist = {
   id: string;
@@ -16,51 +15,79 @@ type Stylist = {
   averageRating: number;
   ratingCount: number;
 };
+// マイページで相談したスタイリストを取得
+async function getProfileStylists(userId: string): Promise<Stylist[]> {
+  // 相談したスタイリストを取得
+  const inquiries = await prisma.inquiry.findMany({
+    where: {
+      userId,
+      stylistId: { not: null },
+      inquiryType: "styling",
+    },
+    include: {
+      stylist: {
+        select: {
+          id: true,
+          name: true,
+          nameEn: true,
+          image: true,
+          bio: true,
+          specialties: true,
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
 
-export default function ProfilePage() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
-  const [stylists, setStylists] = useState<Stylist[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const uniqueStylistIds = new Set<string>();
+  const uniqueStylistlists: Array<{
+    id: string;
+    name: string;
+    nameEn: string | null;
+    image: string | null;
+    bio: string;
+    specialties: unknown;
+  }> = [];
 
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login");
-      return;
+  for (const inquiry of inquiries) {
+    if (inquiry.stylist && !uniqueStylistIds.has(inquiry.stylist.id)) {
+      uniqueStylistIds.add(inquiry.stylist.id);
+      uniqueStylistlists.push(inquiry.stylist);
     }
-
-    if (status === "authenticated" && session?.user?.id) {
-      fetchStylists();
-    }
-  }, [session, status, router]);
-
-  const fetchStylists = async () => {
-    try {
-      const response = await fetch("/api/users/stylists");
-      if (response.ok) {
-        const data = await response.json();
-        setStylists(data);
-      }
-    } catch (error) {
-      console.error("スタイリスト取得エラー:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  if (status === "loading" || isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <p className="text-slate-600">読み込み中...</p>
-        </div>
-      </div>
-    );
   }
 
-  if (!session?.user) {
-    return null;
+  const stylistsWithRatings = await Promise.all(uniqueStylistlists.map(async (stylist) => {
+    const avgRating = await prisma.stylistRating.aggregate({
+      where: { stylistId: stylist.id },
+      _avg: { rating: true },
+      _count: { id: true },
+    });
+
+    const specialties = Array.isArray(stylist.specialties) 
+    ? stylist.specialties 
+    : typeof stylist.specialties === "string" 
+    ? JSON.parse(stylist.specialties) 
+    : [];
+
+    return {
+      ...stylist,
+      specialties,
+      averageRating: avgRating._avg.rating || 0,
+      ratingCount: avgRating._count.id || 0,
+    };
+  }));
+
+  return stylistsWithRatings;
+}
+
+export default async function ProfilePage() {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id) {
+    redirect("/login");
   }
+
+  const stylists = await getProfileStylists(session.user.id);
 
   return (
     <div className="space-y-10">

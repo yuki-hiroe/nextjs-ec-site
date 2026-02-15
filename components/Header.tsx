@@ -90,6 +90,7 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur">
       <div className="mx-auto flex items-center justify-between px-4 py-3 sm:px-6 md:px-10">
+        {/* ヘッダーの出し分け */}
         {isRestrictedPage ? (
           <h1 className="text-lg font-semibold tracking-[0.3em] uppercase text-slate-900">
             Intercambio
@@ -114,25 +115,25 @@ export default function Header() {
           {isAuthenticated || stylist ? (
             <>
               {isAuthenticated && !isAdminDashboard && !isStylistDashboard && (
-            <>
-              <span className="text-slate-400">|</span>
+                <>
+                  <span className="text-slate-400">|</span>
                   <Link href="/inquiries" className="relative text-slate-600 hover:text-slate-900">
                     {unreadCount > 0 && (
-                        <span className="relative ml-2 inline-flex items-center">
-                          <span className="absolute -top-1 -right-1 flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-600 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span>
-                          </span>
-                          <span className="ml-3 inline-flex items-center justify-center rounded-full bg-blue-600 px-2 py-0.5 text-xs font-semibold text-white min-w-[1.25rem]">
-                            {unreadCount > 99 ? "99+" : unreadCount}
-                          </span>
+                      <span className="relative ml-2 inline-flex items-center">
+                        <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-600 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span>
                         </span>
+                        <span className="ml-3 inline-flex items-center justify-center rounded-full bg-blue-600 px-2 py-0.5 text-xs font-semibold text-white min-w-[1.25rem]">
+                          {unreadCount > 99 ? "99+" : unreadCount}
+                        </span>
+                      </span>
                     )}
-                お問い合わせ履歴
-              </Link>
-              <Link href="/profile" className="text-slate-600 hover:text-slate-900">
-                マイページ
-              </Link>
+                    お問い合わせ履歴
+                  </Link>
+                  <Link href="/profile" className="text-slate-600 hover:text-slate-900">
+                    マイページ
+                  </Link>
                 </>
               )}
               {stylist && !isStylistDashboard && (
@@ -170,41 +171,41 @@ export default function Header() {
 
         {/* ハンバーガーメニューボタン（モバイル）- スタイリストダッシュボード・管理者画面では表示しない */}
         {!isRestrictedPage && (
-        <button
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-          className="md:hidden p-2 text-slate-600 hover:text-slate-900 focus:outline-none"
-          aria-label="メニューを開く"
-        >
-          {isMenuOpen ? (
-            <svg
-              className="h-6 w-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          ) : (
-            <svg
-              className="h-6 w-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 6h16M4 12h16M4 18h16"
-              />
-            </svg>
-          )}
-        </button>
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="md:hidden p-2 text-slate-600 hover:text-slate-900 focus:outline-none"
+            aria-label="メニューを開く"
+          >
+            {isMenuOpen ? (
+              <svg
+                className="h-6 w-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            ) : (
+              <svg
+                className="h-6 w-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+            )}
+          </button>
         )}
       </div>
 
@@ -222,43 +223,43 @@ export default function Header() {
             <div className="px-4 py-4 space-y-1">
               {!isRestrictedPage && (
                 <>
-              <Link
-                href="/products"
-                onClick={handleLinkClick}
-                className="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition"
-              >
-                <em>Products</em>
-              </Link>
-              <Link
-                href="/stylists"
-                onClick={handleLinkClick}
-                className="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition"
-              >
-                <em>Stylists</em>
-              </Link>
-              <Link
-                href="/favorites"
-                onClick={handleLinkClick}
-                className="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition"
-              >
-                <em>Favorites</em>
-              </Link>
-              <Link
-                href="/cart"
-                onClick={handleLinkClick}
-                className="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition"
-              >
-                <em>Cart</em>
-              </Link>
-              <Link
-                href="/contact"
-                onClick={handleLinkClick}
-                className="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition"
-              >
-                <em>Contact</em>
-              </Link>
-              
-              <div className="border-t border-slate-200 my-2" />
+                  <Link
+                    href="/products"
+                    onClick={handleLinkClick}
+                    className="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition"
+                  >
+                    <em>Products</em>
+                  </Link>
+                  <Link
+                    href="/stylists"
+                    onClick={handleLinkClick}
+                    className="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition"
+                  >
+                    <em>Stylists</em>
+                  </Link>
+                  <Link
+                    href="/favorites"
+                    onClick={handleLinkClick}
+                    className="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition"
+                  >
+                    <em>Favorites</em>
+                  </Link>
+                  <Link
+                    href="/cart"
+                    onClick={handleLinkClick}
+                    className="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition"
+                  >
+                    <em>Cart</em>
+                  </Link>
+                  <Link
+                    href="/contact"
+                    onClick={handleLinkClick}
+                    className="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition"
+                  >
+                    <em>Contact</em>
+                  </Link>
+                  
+                  <div className="border-t border-slate-200 my-2" />
                 </>
               )}
               
@@ -301,11 +302,11 @@ export default function Header() {
                   {stylist && !isStylistDashboard && (
                     <Link
                       href="/stylist"
-                    onClick={handleLinkClick}
-                    className="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition"
-                  >
+                      onClick={handleLinkClick}
+                      className="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition"
+                    >
                       スタイリストダッシュボード
-                  </Link>
+                    </Link>
                   )}
                   <button
                     onClick={handleLogout}

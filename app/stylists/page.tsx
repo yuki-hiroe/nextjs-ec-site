@@ -1,59 +1,78 @@
-"use client";
-
-import { useState, useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { prisma } from "@/lib/prisma";
 
 type Stylist = {
   id: string;
   name: string;
-  nameEn?: string;
+  nameEn?: string | null;
   bio: string;
   specialties: string[];
-  image?: string;
+  image?: string | null;
   email: string;
   averageRating?: number | null;
   ratingCount?: number;
 };
 
-function StylistsPageContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [stylists, setStylists] = useState<Stylist[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const selectedStylistId = searchParams.get("select");
+type Props = {
+  searchParams: Promise<{ select?: string }>;
+};
 
-  useEffect(() => {
-    // スタイリスト一覧を取得
-    fetch("/api/stylists")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && !data.error) {
-          setStylists(data);
-        }
-        setIsLoading(false);
-      })
-      .catch((error) => {
-        console.error("スタイリスト取得エラー:", error);
-        setIsLoading(false);
-      });
-  }, []);
+async function getStylists(): Promise<Stylist[]> {
+  try {
+    const stylists = await prisma.stylist.findMany({
+      where: { isActive: true },
+      orderBy: { createdAt: "asc" },
+    });
 
-  const handleSelectStylist = (stylistId: string) => {
-    // スタイリストを選択してcontactページに遷移
-    router.push(`/contact?stylistId=${stylistId}&inquiryType=styling`);
-  };
+    let ratingMap = new Map<string, { averageRating: number | null; ratingCount: number }>();
 
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <p className="text-slate-600">読み込み中...</p>
-        </div>
-      </div>
-    );
+    if (prisma.stylistRating) {
+      try {
+        const ratingGroups = await prisma.stylistRating.groupBy({
+          by: ["stylistId"],
+          _avg: { rating: true },
+          _count: { id: true },
+        });
+
+        ratingMap = new Map(
+          ratingGroups.map((group) => [
+            group.stylistId,
+            {
+              averageRating: group._avg.rating ?? null,
+              ratingCount: group._count.id ?? 0,
+            },
+          ])
+        );
+      } catch (error) {
+        console.error("スタイリスト評価集計エラー:", error);
+      }
+    }
+
+    return stylists.map((stylist) => {
+      const rating = ratingMap.get(stylist.id);
+
+      return {
+        ...stylist,
+        specialties: Array.isArray(stylist.specialties)
+          ? stylist.specialties
+          : typeof stylist.specialties === "string"
+          ? JSON.parse(stylist.specialties)
+          : [],
+        averageRating: rating?.averageRating ?? null,
+        ratingCount: rating?.ratingCount ?? 0,
+      };
+    });
+  } catch (error) {
+    console.error("スタイリスト取得エラー:", error);
+    return [];
   }
+}
+
+export default async function StylistsPage({ searchParams }: Props) {
+  const { select } = await searchParams;
+  const stylists = await getStylists();
+  const selectedStylistId = select ?? null;
 
   return (
     <div className="space-y-10">
@@ -160,12 +179,12 @@ function StylistsPageContent() {
                   )}
                 </div>
               </div>
-              <button
-                onClick={() => handleSelectStylist(stylist.id)}
-                className="mt-6 w-full rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+              <Link
+                href={`/contact?stylistId=${stylist.id}&inquiryType=styling`}
+                className="mt-6 inline-flex w-full items-center justify-center rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
               >
                 このスタイリストに相談する
-              </button>
+              </Link>
             </div>
           ))}
         </div>
@@ -180,22 +199,6 @@ function StylistsPageContent() {
         </p>
       </div>
     </div>
-  );
-}
-
-export default function StylistsPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-screen items-center justify-center">
-          <div className="text-center">
-            <p className="text-slate-600">読み込み中...</p>
-          </div>
-        </div>
-      }
-    >
-      <StylistsPageContent />
-    </Suspense>
   );
 }
 

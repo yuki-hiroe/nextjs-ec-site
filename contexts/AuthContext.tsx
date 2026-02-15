@@ -41,8 +41,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(false);
   }, []);
 
+  // ログインする『ログイン機』
   const login = async (email: string, password: string) => {
     try {
+      // ログインAPIにリクエストを送信
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: {
@@ -51,13 +53,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ email, password }),
       });
 
+      // レスポンスをJSON形式で解析
       const data = await response.json();
 
+      // レスポンスが成功しなかった場合はエラーを返す
       if (!response.ok) {
         return { success: false, error: data.error || "ログインに失敗しました" };
       }
 
+      // ユーザー情報を設定
       setUser(data.user);
+      // ユーザー情報をローカルストレージに保存
       localStorage.setItem("user", JSON.stringify(data.user));
       return { success: true };
     } catch (error) {
@@ -66,6 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // 登録する『登録機』
   const register = async (
     email: string,
     password: string,
@@ -75,6 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     phone?: string
   ) => {
     try {
+      // 登録APIにリクエストを送信
       const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: {
@@ -83,13 +91,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ email, password, name, lastName, firstName, phone }),
       });
 
+      // レスポンスをJSON形式で解析
       const data = await response.json();
-
+      // レスポンスが成功しなかった場合はエラーを返す
       if (!response.ok) {
         return { success: false, error: data.error || "登録に失敗しました" };
       }
 
+      // ユーザー情報を設定
       setUser(data.user);
+      // ユーザー情報をローカルストレージに保存
       localStorage.setItem("user", JSON.stringify(data.user));
       return { success: true };
     } catch (error) {
@@ -98,11 +109,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // ログアウトする『ログアウト機』
   const logout = () => {
+    // ユーザー情報をクリア
     setUser(null);
+    // ユーザー情報をローカルストレージから削除
     localStorage.removeItem("user");
   };
 
+  // 認証情報を提供する『認証情報提供機』
   return (
     <AuthContext.Provider
       value={{
@@ -119,6 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+// 認証情報を使用する『認証情報使用機』
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
