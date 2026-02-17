@@ -1,116 +1,65 @@
-"use client";
-
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useSession, signOut } from "next-auth/react";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { redirect } from "next/navigation";
+import AdminLogoutButton from "@/components/AdminLogoutButton";
 
-export default function AdminDashboardPage() {
-  const router = useRouter();
-  const [admin, setAdmin] = useState<any>(null);
-  const [stats, setStats] = useState({
-    products: 0,
-    orders: 0,
-    inquiries: 0,
-    stylists: 0,
-    pendingApplications: 0,
-    approvedTestimonials: 0,
-  });
-  const [isLoading, setIsLoading] = useState(true);
+type AdminStats = {
+  products: number;
+  orders: number;
+  inquiries: number;
+  stylists: number;
+  pendingApplications: number;
+  approvedTestimonials: number;
+};
 
-  const fetchStats = async () => {
-    try {
-      const response = await fetch("/api/admin/stats");
-      const data = await response.json();
-      if (data && !data.error) {
-        setStats({
-          products: data.products ?? 0,
-          orders: data.orders ?? 0,
-          inquiries: data.inquiries ?? 0,
-          stylists: data.stylists ?? 0,
-          pendingApplications: data.pendingApplications ?? 0,
-          approvedTestimonials: data.approvedTestimonials ?? 0,
-        });
-      }
-      setIsLoading(false);
-    } catch (error) {
-      console.error("統計情報取得エラー:", error);
-      setIsLoading(false);
-    }
-  };
+async function getAdminStats(): Promise<AdminStats> {
+  const [products, orders, inquiries, stylists, pendingApplications, approvedTestimonials] = await Promise.all([
+    prisma.product.count(),
+    prisma.order.count(),
+    prisma.inquiry.count(),
+    prisma.stylist.count({
+      where: { isActive: true },
+    }),
+    // 審査中のスタイリスト申請数
+    prisma.stylistApplication
+      ? prisma.stylistApplication.count({
+          where: { status: "pending" },
+        })
+      : Promise.resolve(0),
+    // 承認済みのお客様の声数
+    prisma.testimonial.count({
+      where: { isApproved: true },
+    }),
+  ]);
+  return {
+    products,
+    orders,
+    inquiries,
+    stylists,
+    pendingApplications,
+    approvedTestimonials,
+  } as AdminStats;
+}
 
-  const { data: session, status } = useSession();
+export default async function AdminDashboardPage() {
+  const session = await getServerSession(authOptions); //サーバーセッションを取得,認証判定
 
-  useEffect(() => {
-    // NextAuthセッションで管理者認証を確認
-    if (status === "loading") {
-      return; // セッション読み込み中
-    }
-
-    if (status === "unauthenticated" || !session?.user) {
-      router.push("/admin/login");
-      return;
-    }
-
-    if (session.user.role !== "admin") {
-      router.push("/admin/login");
-      return;
-    }
-
-    // セッションから管理者情報を設定
-    setAdmin({
-      id: session.user.id,
-      email: session.user.email,
-      name: session.user.name,
-      role: session.user.role,
-    });
-
-    // 統計情報を取得
-    fetchStats();
-
-    // ページがフォーカスされた時に統計情報を再取得
-    const handleFocus = () => {
-      fetchStats();
-    };
-
-    window.addEventListener("focus", handleFocus);
-
-    return () => {
-      window.removeEventListener("focus", handleFocus);
-    };
-  }, [router, session, status]);
-
-  const handleLogout = async () => {
-    await signOut({ callbackUrl: "/admin/login" });
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <p className="text-slate-600">読み込み中...</p>
-        </div>
-      </div>
-    );
+  if (!session?.user?.id || session.user.role !== "admin") {
+    redirect("/admin/login");
   }
 
-  if (!admin) {
-    return null;
-  }
+  const stats = await getAdminStats();
 
   return (
     <div className="space-y-10">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-semibold text-slate-900">管理者ダッシュボード</h1>
-          <p className="mt-2 text-slate-600">ようこそ、{admin.name}さん</p>
+          <p className="mt-2 text-slate-600">ようこそ、{session.user.name}さん</p>
         </div>
-        <button
-          onClick={handleLogout}
-          className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:border-slate-900"
-        >
-          ログアウト
-        </button>
+        <AdminLogoutButton />
       </div>
 
       {/* 統計情報 */}
