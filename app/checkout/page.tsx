@@ -223,6 +223,7 @@ export default function CheckoutPage() {
                     value={formData.lastName}
                     onChange={handleInputChange}
                     className="mt-1 w-full rounded-lg border border-slate-300 px-4 py-2 text-sm focus:border-slate-900 focus:outline-none"
+                    placeholder="山田"  
                   />
                 </div>
                 <div>
@@ -237,6 +238,7 @@ export default function CheckoutPage() {
                     value={formData.firstName}
                     onChange={handleInputChange}
                     className="mt-1 w-full rounded-lg border border-slate-300 px-4 py-2 text-sm focus:border-slate-900 focus:outline-none"
+                    placeholder="太郎"
                   />
                 </div>
               </div>
@@ -254,6 +256,7 @@ export default function CheckoutPage() {
                     value={formData.lastNameKana}
                     onChange={handleInputChange}
                     className="mt-1 w-full rounded-lg border border-slate-300 px-4 py-2 text-sm focus:border-slate-900 focus:outline-none"
+                    placeholder="ヤマダ"
                   />
                 </div>
                 <div>
@@ -268,6 +271,7 @@ export default function CheckoutPage() {
                     value={formData.firstNameKana}
                     onChange={handleInputChange}
                     className="mt-1 w-full rounded-lg border border-slate-300 px-4 py-2 text-sm focus:border-slate-900 focus:outline-none"
+                    placeholder="タロウ"
                   />
                 </div>
               </div>
@@ -363,6 +367,7 @@ export default function CheckoutPage() {
                   value={formData.city}
                   onChange={handleInputChange}
                   className="mt-1 w-full rounded-lg border border-slate-300 px-4 py-2 text-sm focus:border-slate-900 focus:outline-none"
+                  placeholder="千代田区丸の内"
                 />
               </div>
 
@@ -378,6 +383,7 @@ export default function CheckoutPage() {
                   value={formData.address}
                   onChange={handleInputChange}
                   className="mt-1 w-full rounded-lg border border-slate-300 px-4 py-2 text-sm focus:border-slate-900 focus:outline-none"
+                  placeholder="1-9-1"
                 />
               </div>
 
@@ -392,6 +398,7 @@ export default function CheckoutPage() {
                   value={formData.building}
                   onChange={handleInputChange}
                   className="mt-1 w-full rounded-lg border border-slate-300 px-4 py-2 text-sm focus:border-slate-900 focus:outline-none"
+                  placeholder="グランスタ八重洲801"
                 />
               </div>
 
@@ -639,7 +646,7 @@ export default function CheckoutPage() {
             <h2 className="text-lg font-semibold text-slate-900">注文内容</h2>
             <div className="mt-4 space-y-3">
               {items.map((item) => {
-                const price = parseInt(item.price.replace(/[¥,]/g, ""), 10);
+                const itemPrice = parseInt(item.price.replace(/[¥,]/g, ""), 10);
                 return (
                   <div key={item.id} className="flex gap-3">
                     <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-slate-100">
@@ -654,7 +661,7 @@ export default function CheckoutPage() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-slate-900">{item.name}</p>
                       <p className="mt-1 text-xs text-slate-500">
-                        {item.price} × {item.quantity}
+                        ¥{itemPrice.toLocaleString()} × {item.quantity}
                       </p>
                     </div>
                   </div>
@@ -686,7 +693,7 @@ export default function CheckoutPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="mt-6 w-full rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="mt-6 w-full rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50 cursor-pointer"
             >
               {isSubmitting ? "処理中..." : "注文を確定する"}
             </button>

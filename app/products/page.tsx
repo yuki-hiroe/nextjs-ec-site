@@ -18,6 +18,11 @@ export const metadata: Metadata = {
   description: "Intercambio で取り扱う全商品をご覧いただけます。",
 };
 
+const formattedPrice = (price: string) => {
+  const n = Number(String(price).replace(/[^\d.-]/g, ""));
+  return Number.isFinite(n) ? n.toLocaleString("ja-JP") : price;
+}
+
 async function getProducts(): Promise<Product[]> {
   try {
     // ビルド時には直接Prismaを使用（APIサーバーが起動していないため）
@@ -56,7 +61,7 @@ async function getProducts(): Promise<Product[]> {
         id: product.id,
         slug: product.slug,
         name: product.name,
-        price: product.price,
+        price: formattedPrice(product.price),
         tagline: product.tagline || "",
         badges: badges,
         image: product.image,
@@ -122,7 +127,7 @@ export default async function ProductsPage() {
                 ))}
               </div>
               <span className="text-sm font-semibold text-slate-900">
-                {product.price}
+                ¥{formattedPrice(product.price)}
               </span>
             </div>
             <h2 className="mt-3 text-lg font-semibold text-slate-900 group-hover:underline">

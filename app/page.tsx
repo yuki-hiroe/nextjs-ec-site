@@ -110,7 +110,7 @@ async function getTestimonials(): Promise<Testimonial[]> {
     const testimonials = await prisma.testimonial.findMany({
       where: {
         isApproved: true,
-  },
+      },
       select: {
         id: true,
         name: true,
@@ -208,7 +208,7 @@ export default async function HomePage() {
                         </span>
                       )}
                     </div>
-                    <span className="text-xs font-semibold text-slate-900">{product.price}</span>
+                    <span className="text-xs font-semibold text-slate-900">¥{product.price}</span>
                 </div>
                 <h3 className="mt-4 text-xl font-semibold text-slate-900">
                   {product.name}

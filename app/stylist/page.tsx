@@ -328,7 +328,7 @@ export default function StylistDashboardPage() {
           )}
         <button
           onClick={handleLogout}
-          className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:border-slate-900"
+          className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:border-slate-900 cursor-pointer"
         >
           ログアウト
         </button>
@@ -342,7 +342,7 @@ export default function StylistDashboardPage() {
           {!isEditing && (
             <button
               onClick={() => setIsEditing(true)}
-              className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:border-slate-900"
+              className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:border-slate-900 cursor-pointer"
             >
               編集
             </button>
@@ -425,17 +425,17 @@ export default function StylistDashboardPage() {
               </div>
             </div>
 
-              <div>
-                <label htmlFor="edit-nameEn" className="block text-sm font-medium text-slate-700 mb-2">
-                  英語名
-                </label>
-                <input
-                  id="edit-nameEn"
-                  type="text"
-                  value={editFormData.nameEn}
-                  onChange={(e) => setEditFormData((prev) => ({ ...prev, nameEn: e.target.value }))}
-                  className="w-full rounded-lg border border-slate-300 px-4 py-2 text-sm focus:border-slate-900 focus:outline-none"
-                />
+            <div>
+              <label htmlFor="edit-nameEn" className="block text-sm font-medium text-slate-700 mb-2">
+                英語名
+              </label>
+              <input
+                id="edit-nameEn"
+                type="text"
+                value={editFormData.nameEn}
+                onChange={(e) => setEditFormData((prev) => ({ ...prev, nameEn: e.target.value }))}
+                className="w-full rounded-lg border border-slate-300 px-4 py-2 text-sm focus:border-slate-900 focus:outline-none"
+              />
             </div>
 
             <div>
@@ -499,7 +499,7 @@ export default function StylistDashboardPage() {
               <button
                 type="submit"
                 disabled={isSaving}
-                className="flex-1 rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50 cursor-pointer"
               >
                 {isSaving ? "保存中..." : "保存"}
               </button>
@@ -520,7 +520,7 @@ export default function StylistDashboardPage() {
                     });
                   }
                 }}
-                className="flex-1 rounded-full border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-900 transition hover:border-slate-900"
+                className="flex-1 rounded-full border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-900 transition hover:border-slate-900 cursor-pointer"
               >
                 キャンセル
               </button>

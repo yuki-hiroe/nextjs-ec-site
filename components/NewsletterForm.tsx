@@ -162,7 +162,7 @@ export default function NewsletterForm() {
         <button
           onClick={handleUnsubscribe}
           disabled={isUnsubscribing}
-          className="w-full rounded-full border border-white/40 bg-transparent px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full rounded-full border border-white/40 bg-transparent px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10 disabled:opacity-50 cursor-pointer"
         >
           {isUnsubscribing ? "処理中..." : "配信を停止する"}
         </button>
@@ -194,7 +194,7 @@ export default function NewsletterForm() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-100 disabled:opacity-50 cursol-pointer"
           >
             {isLoading ? "登録中..." : "配信を再開する"}
           </button>
@@ -221,7 +221,7 @@ export default function NewsletterForm() {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-100 disabled:opacity-50 cursol-pointer"
         >
           {isLoading ? "登録中..." : "Newsletterに登録する"}
         </button>

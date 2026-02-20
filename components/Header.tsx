@@ -96,7 +96,7 @@ export default function Header() {
             Intercambio
           </h1>
         ) : (
-        <Link href="/" className="text-lg font-semibold tracking-[0.3em] uppercase">
+        <Link href="/" className="text-lg font-semibold tracking-[0.3em] uppercase cursor-pointer">
           <h1>Intercambio</h1>
         </Link>
         )}
@@ -105,11 +105,11 @@ export default function Header() {
         <nav className="hidden md:flex items-center gap-5 text-sm text-slate-600">
           {!isRestrictedPage && (
             <>
-          <Link href="/products"><em>Products</em></Link>
-          <Link href="/stylists"><em>Stylists</em></Link>
-          <Link href="/favorites"><em>Favorites</em></Link>
-          <Link href="/cart"><em>Cart</em></Link>
-          <Link href="/contact"><em>Contact</em></Link>
+          <Link href="/products" className="cursor-pointer"><em>Products</em></Link>
+          <Link href="/stylists" className="cursor-pointer"><em>Stylists</em></Link>
+          <Link href="/favorites" className="cursor-pointer"><em>Favorites</em></Link>
+          <Link href="/cart" className="cursor-pointer"><em>Cart</em></Link>
+          <Link href="/contact" className="cursor-pointer"><em>Contact</em></Link>
             </>
           )}
           {isAuthenticated || stylist ? (
@@ -117,7 +117,7 @@ export default function Header() {
               {isAuthenticated && !isAdminDashboard && !isStylistDashboard && (
                 <>
                   <span className="text-slate-400">|</span>
-                  <Link href="/inquiries" className="relative text-slate-600 hover:text-slate-900">
+                  <Link href="/inquiries" className="relative text-slate-600 hover:text-slate-900 cursor-pointer">
                     {unreadCount > 0 && (
                       <span className="relative ml-2 inline-flex items-center">
                         <span className="absolute -top-1 -right-1 flex h-2 w-2">
@@ -131,14 +131,14 @@ export default function Header() {
                     )}
                     お問い合わせ履歴
                   </Link>
-                  <Link href="/profile" className="text-slate-600 hover:text-slate-900">
+                  <Link href="/profile" className="text-slate-600 hover:text-slate-900 cursor-pointer">
                     マイページ
                   </Link>
                 </>
               )}
               {stylist && !isStylistDashboard && (
                 <>
-                  <Link href="/stylist" className="text-slate-600 hover:text-slate-900">
+                  <Link href="/stylist" className="text-slate-600 hover:text-slate-900 cursor-pointer">
                     スタイリストダッシュボード
                   </Link>
                 </>
@@ -148,7 +148,7 @@ export default function Header() {
               </span>
               <button
                 onClick={handleLogout}
-                className="text-slate-600 hover:text-slate-900"
+                className="text-slate-600 hover:text-slate-900 cursor-pointer"
               >
                 ログアウト
               </button>
@@ -156,12 +156,12 @@ export default function Header() {
           ) : (
             <>
               {/* <span className="text-slate-400">|</span> */}
-              <Link href="/login" className="text-slate-600 hover:text-slate-900">
+              <Link href="/login" className="text-slate-600 hover:text-slate-900 cursor-pointer">
                 ログイン
               </Link>
               <Link
                 href="/register"
-                className="rounded-full border border-slate-300 px-4 py-2 text-slate-900 transition hover:border-slate-900"
+                className="rounded-full border border-slate-300 px-4 py-2 text-slate-900 transition hover:border-slate-900 cursor-pointer"
               >
                 新規登録
               </Link>
@@ -173,7 +173,7 @@ export default function Header() {
         {!isRestrictedPage && (
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="md:hidden p-2 text-slate-600 hover:text-slate-900 focus:outline-none"
+            className="md:hidden p-2 text-slate-600 hover:text-slate-900 focus:outline-none cursor-pointer"
             aria-label="メニューを開く"
           >
             {isMenuOpen ? (
@@ -226,35 +226,35 @@ export default function Header() {
                   <Link
                     href="/products"
                     onClick={handleLinkClick}
-                    className="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition"
+                    className="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition cursor-pointer"
                   >
                     <em>Products</em>
                   </Link>
                   <Link
                     href="/stylists"
                     onClick={handleLinkClick}
-                    className="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition"
+                    className="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition cursor-pointer"
                   >
                     <em>Stylists</em>
                   </Link>
                   <Link
                     href="/favorites"
                     onClick={handleLinkClick}
-                    className="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition"
+                    className="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition cursor-pointer"
                   >
                     <em>Favorites</em>
                   </Link>
                   <Link
                     href="/cart"
                     onClick={handleLinkClick}
-                    className="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition"
+                    className="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition cursor-pointer"
                   >
                     <em>Cart</em>
                   </Link>
                   <Link
                     href="/contact"
                     onClick={handleLinkClick}
-                    className="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition"
+                    className="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition cursor-pointer"
                   >
                     <em>Contact</em>
                   </Link>
@@ -273,7 +273,7 @@ export default function Header() {
                       <Link
                         href="/inquiries"
                         onClick={handleLinkClick}
-                        className="relative block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition"
+                        className="relative block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition cursor-pointer"
                       >
                         <span className="flex items-center justify-between">
                           <span>お問い合わせ履歴</span>
@@ -293,7 +293,7 @@ export default function Header() {
                       <Link
                         href="/profile"
                         onClick={handleLinkClick}
-                        className="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition"
+                        className="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition cursor-pointer"
                       >
                         マイページ
                       </Link>
@@ -303,14 +303,14 @@ export default function Header() {
                     <Link
                       href="/stylist"
                       onClick={handleLinkClick}
-                      className="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition"
+                      className="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition cursor-pointer"
                     >
                       スタイリストダッシュボード
                     </Link>
                   )}
                   <button
                     onClick={handleLogout}
-                    className="w-full text-left px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition"
+                    className="w-full text-left px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition cursor-pointer"
                   >
                     ログアウト
                   </button>
@@ -320,14 +320,14 @@ export default function Header() {
                   <Link
                     href="/login"
                     onClick={handleLinkClick}
-                    className="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition"
+                    className="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition cursor-pointer"
                   >
                     ログイン
                   </Link>
                   <Link
                     href="/register"
                     onClick={handleLinkClick}
-                    className="block px-4 py-3 text-sm text-slate-900 hover:bg-slate-50 rounded-lg transition text-center border border-slate-300 hover:border-slate-900"
+                    className="block px-4 py-3 text-sm text-slate-900 hover:bg-slate-50 rounded-lg transition text-center border border-slate-300 hover:border-slate-900 cursor-pointer"
                   >
                     新規登録
                   </Link>

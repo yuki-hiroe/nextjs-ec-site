@@ -208,7 +208,7 @@ export default function AdminOrdersClient({ initialOrders }: AdminOrdersClientPr
           </select>
           <button
             onClick={handleSearch}
-            className="rounded-full bg-slate-900 px-6 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
+            className="rounded-full bg-slate-900 px-6 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 cursor-pointer"
           >
             検索
           </button>
@@ -279,7 +279,7 @@ export default function AdminOrdersClient({ initialOrders }: AdminOrdersClientPr
                         setNewStatus(order.status);
                         setStatusReason("");
                       }}
-                      className="rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs text-slate-700 hover:border-slate-900 hover:text-slate-900 transition"
+                      className="rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs text-slate-700 hover:border-slate-900 hover:text-slate-900 transition cursor-pointer"
                     >
                       ステータス変更
                     </button>
@@ -291,7 +291,7 @@ export default function AdminOrdersClient({ initialOrders }: AdminOrdersClientPr
                           setExpandedOrder(order.id);
                         }
                       }}
-                      className="rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs text-slate-700 hover:border-slate-900 hover:text-slate-900 transition"
+                      className="rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs text-slate-700 hover:border-slate-900 hover:text-slate-900 transition cursor-pointer"
                     >
                       {expandedOrder === order.id ? "閉じる" : "詳細"}
                     </button>
@@ -400,7 +400,7 @@ export default function AdminOrdersClient({ initialOrders }: AdminOrdersClientPr
               <button
                 onClick={handleStatusUpdate}
                 disabled={isUpdating || !newStatus || !statusReason.trim()}
-                className="flex-1 rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50 cursor-pointer"
               >
                 {isUpdating ? "更新中..." : "更新"}
               </button>
@@ -411,7 +411,7 @@ export default function AdminOrdersClient({ initialOrders }: AdminOrdersClientPr
                   setStatusReason("");
                 }}
                 disabled={isUpdating}
-                className="rounded-full border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-900 transition hover:border-slate-900 disabled:opacity-50"
+                className="rounded-full border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-900 transition hover:border-slate-900 disabled:opacity-50 cursor-pointer"
               >
                 キャンセル
               </button>

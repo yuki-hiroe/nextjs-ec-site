@@ -89,7 +89,7 @@ export default function FavoritesPage() {
               >
                 {item.name}
               </Link>
-              <p className="mt-2 text-sm font-semibold text-slate-900">{item.price}</p>
+              <p className="mt-2 text-sm font-semibold text-slate-900">¥{item.price}</p>
             </div>
             <div className="mt-4 flex flex-col gap-2">
               <AddToCartButton

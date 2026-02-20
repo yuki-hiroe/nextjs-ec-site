@@ -2,6 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
 
+export async function GET(request: NextRequest) {
+  const authResult = await isAdminAuthenticated(request);
+  if (!authResult.authenticated) {
+    return authResult.response;
+  }
+  const products = await prisma.product.findMany();
+  return NextResponse.json(products);
+}
+
 export async function POST(request: NextRequest) {
   const authResult = await isAdminAuthenticated(request);
   if (!authResult.authenticated) {

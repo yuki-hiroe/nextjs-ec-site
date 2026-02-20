@@ -28,6 +28,13 @@ type Product = {
   stock: number;
 };
 
+// 価格をフォーマットする関数
+const formattedPrice = (price: string) => {
+  const n = Number(String(price).replace(/[^\d.-]/g, ""));
+  return Number.isFinite(n) ? n.toLocaleString("ja-JP") : price;
+}
+
+// 商品の詳細を取得
 async function getProduct(slug: string): Promise<Product | null> {
   try {
     // ビルド時には直接Prismaを使用（APIサーバーが起動していないため）
@@ -132,7 +139,7 @@ async function getProduct(slug: string): Promise<Product | null> {
       id: product.id,
       slug: product.slug,
       name: product.name,
-      price: product.price,
+      price: formattedPrice(product.price),
       tagline: product.tagline || "",
       description: product.description || "",
       badges,
@@ -150,8 +157,7 @@ async function getProduct(slug: string): Promise<Product | null> {
   }
 }
 
-// generateStaticParamsは削除（動的レンダリングのため）
-
+// 商品のメタデータを生成
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const product = await getProduct(slug);
@@ -216,7 +222,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             <h1 className="text-3xl font-semibold text-slate-900">{product.name}</h1>
             <p className="mt-2 text-slate-600">{product.tagline}</p>
           </div>
-          <p className="text-2xl font-semibold text-slate-900">{product.price}</p>
+          <p className="text-2xl font-semibold text-slate-900">¥{formattedPrice(product.price)}</p>
           <div className="flex items-center gap-2">
             <StockDisplay productId={product.id} initialStock={product.stock} />
           </div>
@@ -226,7 +232,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               product={{
                 id: product.id,
                 name: product.name,
-                price: product.price,
+                price: formattedPrice(product.price),
                 image: product.image,
                 slug: product.slug,
                 stock: product.stock,
@@ -236,7 +242,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               product={{
                 id: product.id,
                 name: product.name,
-                price: product.price,
+                price: formattedPrice(product.price),
                 image: product.image,
                 slug: product.slug,
               }}

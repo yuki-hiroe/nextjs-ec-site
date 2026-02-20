@@ -177,7 +177,7 @@ function ContactPageContent() {
                     required
                     value={formData.inquiryType}
                     onChange={handleInputChange}
-                    className="mt-1 w-full rounded-lg border border-slate-300 px-4 py-2 text-sm focus:border-slate-900 focus:outline-none"
+                    className="mt-1 w-full rounded-lg border border-slate-300 px-4 py-2 text-sm focus:border-slate-900 focus:outline-none cursor-pointer"
                   >
                     <option value="styling">スタイリング相談</option>
                     <option value="product">商品について</option>
@@ -269,7 +269,7 @@ function ContactPageContent() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="mt-6 w-full rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="mt-6 w-full rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50 cursor-pointer"
               >
                 {isSubmitting ? "送信中..." : "送信する"}
               </button>

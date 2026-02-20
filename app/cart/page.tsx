@@ -121,7 +121,7 @@ export default function CartPage() {
                       >
                         {item.name}
                       </Link>
-                      <p className="mt-1 text-sm text-slate-600">{item.price}</p>
+                      <p className="mt-1 text-sm text-slate-600">¥{item.price}</p>
                       {!hasEnoughStock && (
                         <p className="mt-2 text-xs font-medium text-amber-700">
                           在庫不足: 残り{currentStock}点（カート内: {item.quantity}点）

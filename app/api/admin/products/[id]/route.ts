@@ -73,6 +73,14 @@ export async function PATCH(
         { status: 400 }
       );
     }
+    // slugは小文字の英数字とハイフンのみ使用可能にする正規表現を使用してバリデーション
+    const normalizedSlug = slug.trim().toLowerCase();
+    if (!/^[a-z0-9-]+$/.test(normalizedSlug)) {
+      return NextResponse.json(
+        { error: "slugは小文字の英数字とハイフンのみ使用できます" },
+        { status: 400 }
+      );
+    }
 
     // 既存のslugチェック（自分自身を除く）
     const existing = await prisma.product.findUnique({
@@ -96,7 +104,7 @@ export async function PATCH(
     const product = await prisma.product.update({
       where: { id },
       data: {
-        slug: slug.trim(),
+        slug: normalizedSlug,
         name: name.trim(),
         price: price.trim(),
         tagline: (tagline || "").trim(),
