@@ -104,6 +104,7 @@ export default function NewProductPage() {
         return;
       }
 
+      router.refresh();
       router.push("/admin/products");
     } catch (error) {
       setError(error instanceof Error ? error.message : "商品の追加に失敗しました");

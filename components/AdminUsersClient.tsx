@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
 type User = {
@@ -32,6 +32,10 @@ type AdminUsersClientProps = {
 export default function AdminUsersClient({ initialUsers }: AdminUsersClientProps) {
     const [users, setUsers] = useState<User[]>(initialUsers);
     const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        setUsers(initialUsers);
+    }, [initialUsers]);
     const [showSuspended, setShowSuspended] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedUser, setSelectedUser] = useState<User | null>(null);

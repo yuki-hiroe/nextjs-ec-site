@@ -9,16 +9,17 @@ type StockDisplayProps = {
 };
 
 export default function StockDisplay({ productId, initialStock }: StockDisplayProps) {
-  const { getStock, refreshStock } = useInventory();
+  const { getStock, hasFetchedStock, refreshStock } = useInventory();
   const currentStock = getStock(productId);
-  const stock = currentStock > 0 ? currentStock : initialStock || 0;
+  // API取得済みならその値を使う。未取得ならinitialStockをフォールバック（取得後に上書き）
+  const stock = hasFetchedStock(productId) ? currentStock : (initialStock ?? 0);
 
   // コンポーネントマウント時に在庫情報を取得
   useEffect(() => {
-    if (productId && !currentStock && initialStock !== undefined) {
+    if (productId && !hasFetchedStock(productId) && initialStock !== undefined) {
       refreshStock(productId);
     }
-  }, [productId, currentStock, initialStock, refreshStock]);
+  }, [productId, hasFetchedStock, initialStock, refreshStock]);
 
   return (
     <span

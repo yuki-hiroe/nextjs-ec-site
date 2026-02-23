@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
 type Application = {
@@ -24,6 +24,10 @@ type AdminStylistsApplicationsClientProps = {
 export default function AdminStylistsApplicationsClient( { initialApplications }: AdminStylistsApplicationsClientProps ) {
   const [applications, setApplications] = useState<Application[]>(initialApplications || []);
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    setApplications(initialApplications || []);
+  }, [initialApplications]);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
   const [showModal, setShowModal] = useState(false);

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { useCart } from "@/contexts/CartContext";
+import { useInventory } from "@/contexts/InventoryContext";
 import { useSession } from "next-auth/react";
 
 type PaymentMethod = "credit" | "bank" | "convenience";
@@ -12,6 +13,7 @@ type PaymentMethod = "credit" | "bank" | "convenience";
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, getTotalPrice, clearCart } = useCart();
+  const { refreshStock } = useInventory();
   const { data: session, status } = useSession();
   const isAuthenticated = status === "authenticated";
   const isLoading = status === "loading";
@@ -132,6 +134,9 @@ export default function CheckoutPage() {
         setIsSubmitting(false);
         return;
       }
+
+      // 購入した商品の在庫をクライアント側で更新（リロード不要で在庫切れを反映）
+      await Promise.all(items.map((item) => refreshStock(item.id)));
 
       // カートをクリア
       clearCart();

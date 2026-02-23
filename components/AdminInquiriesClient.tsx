@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
 type Reply = {
@@ -46,6 +46,10 @@ type AdminInquiriesClientProps = {
 export default function AdminInquiriesClient({ initialInquiries }: AdminInquiriesClientProps) {
   const [inquiries, setInquiries] = useState<Inquiry[]>(initialInquiries ?? []);
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    setInquiries(initialInquiries ?? []);
+  }, [initialInquiries]);
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedInquiry, setExpandedInquiry] = useState<string | null>(null);
@@ -97,11 +101,7 @@ export default function AdminInquiriesClient({ initialInquiries }: AdminInquirie
       });
 
       if (response.ok) {
-        setInquiries((prev) =>
-          prev.map((inq) =>
-            inq.id === inquiryId ? { ...inq, status: newStatus } : inq
-          )
-        );
+        fetchInquiries();
       }
     } catch (error) {
       console.error("ステータス更新エラー:", error);

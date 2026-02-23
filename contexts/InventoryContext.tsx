@@ -10,6 +10,7 @@ type Inventory = {
 type InventoryContextType = {
   inventory: Inventory;
   getStock: (productId: string) => number;
+  hasFetchedStock: (productId: string) => boolean;
   reduceStock: (productId: string, quantity: number) => Promise<boolean>;
   checkStock: (productId: string, quantity: number) => boolean;
   refreshStock: (productId: string) => Promise<void>;
@@ -72,6 +73,11 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
   const getStock = (productId: string): number => {
     return inventory[productId] ?? 0;
   };
+
+  // 在庫をAPIから取得済みかどうか（未取得ならinitialStockを使う判定に使用）
+  const hasFetchedStock = useCallback((productId: string): boolean => {
+    return productId in inventory;
+  }, [inventory]);
   // 注文しようとしている数が、在庫の範囲内かどうかを判定する『判定機』
   // true: 在庫が足りている、false: 在庫が足りていない
   const checkStock = (productId: string, quantity: number): boolean => {
@@ -104,6 +110,7 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
       value={{
         inventory,
         getStock,
+        hasFetchedStock,
         reduceStock,
         checkStock,
         refreshStock,

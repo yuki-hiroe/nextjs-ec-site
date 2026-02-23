@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import NewsletterForm from "@/components/NewsletterForm";
+import ProductCard from "@/components/ProductCard";
 import { prisma } from "@/lib/prisma";
 
 type Product = {
@@ -11,6 +12,7 @@ type Product = {
   tagline: string | null;
   badges: string[] | null;
   image: string;
+  stock: number;
 };
 
 // データベースから商品を取得してランダムに4件を選択
@@ -26,6 +28,7 @@ async function getFeaturedProducts(): Promise<Product[]> {
         tagline: true,
         badges: true,
         image: true,
+        stock: true,
       },
     });
 
@@ -60,6 +63,7 @@ async function getFeaturedProducts(): Promise<Product[]> {
         tagline: product.tagline || "",
         badges,
         image: product.image,
+        stock: product.stock ?? 0,
       };
     });
 
@@ -186,41 +190,20 @@ export default async function HomePage() {
           {featuredProducts.length > 0 ? (
           <div className="mt-6 flex snap-x snap-mandatory gap-6 overflow-x-auto scroll-smooth">
             {featuredProducts.map((product) => (
-              <article
+              <ProductCard
                 key={product.id}
-                className="min-w-[280px] snap-center rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
-              >
-                <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-slate-100">
-                  <Image
-                    src={product.image}
-                    alt={product.name}
-                    fill
-                    className="object-cover transition-transform group-hover:scale-105"
-                    sizes="(max-width: 640px) 100vw, 280px"
-                    unoptimized
-                  />
-                </div>
-                  <div className="mt-4 flex items-center justify-between gap-2">
-                    <div className="flex flex-wrap gap-1">
-                      {product.badges && product.badges.length > 0 && (
-                        <span className="text-xs uppercase tracking-[0.3em] text-slate-400">
-                          {product.badges[0]}
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-xs font-semibold text-slate-900">¥{product.price}</span>
-                </div>
-                <h3 className="mt-4 text-xl font-semibold text-slate-900">
-                  {product.name}
-                </h3>
-                  <p className="mt-3 text-sm text-slate-500">{product.tagline || ""}</p>
-                <Link
-                  href={`/products/${product.slug}`}
-                  className="mt-6 inline-flex items-center text-sm font-semibold text-slate-900 hover:underline"
-                >
-                  詳細を見る
-                </Link>
-              </article>
+                product={{
+                  id: product.id,
+                  slug: product.slug,
+                  name: product.name,
+                  price: product.price,
+                  tagline: product.tagline || "",
+                  badges: product.badges || [],
+                  image: product.image,
+                }}
+                initialStock={product.stock}
+                variant="featured"
+              />
             ))}
           </div>
           ) : (

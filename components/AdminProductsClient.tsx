@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -21,6 +21,10 @@ export default function AdminProductsClient({ initialProducts }: AdminProductsCl
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    setProducts(initialProducts);
+  }, [initialProducts]);
   const formattedPrice = (price: string) => {
     const n = Number(String(price).replace(/[^\d.-]/g, ""));
     return Number.isFinite(n) ? n.toLocaleString("ja-JP") : price;

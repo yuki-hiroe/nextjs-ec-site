@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
 type Testimonial = {
@@ -26,6 +26,10 @@ export default function AdminTestimonialsPage({ initialTestimonials }: AdminTest
   const [testimonials, setTestimonials] = useState<Testimonial[]>(initialTestimonials || []);
   const [isLoading, setIsLoading] = useState(false);
   const [filter, setFilter] = useState<"all" | "approved" | "pending">("all");
+
+  useEffect(() => {
+    setTestimonials(initialTestimonials || []);
+  }, [initialTestimonials]);
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
 
   const fetchTestimonials = async (statusOverride?: "all" | "approved" | "pending") => {

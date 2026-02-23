@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
 type AuditLog = {
@@ -27,6 +27,11 @@ export default function AdminAuditLogsPage( { initialLogs, initialTotal }: Admin
   const [logs, setLogs] = useState<AuditLog[]>(initialLogs?.auditLogs || []);
   const [total, setTotal] = useState(initialTotal || 0);
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    setLogs(initialLogs?.auditLogs || []);
+    setTotal(initialTotal || 0);
+  }, [initialLogs, initialTotal]);
   const [filters, setFilters] = useState({
     action: "", // どんな操作をしたか（例：削除、編集）
     targetType: "", // 操作の対象は何か（例：ユーザー、商品）

@@ -78,7 +78,7 @@ export default function NewStylistPage() {
         return;
       }
 
-      // 登録成功
+      router.refresh();
       router.push("/admin/stylists");
     } catch (error) {
       console.error("登録エラー:", error);

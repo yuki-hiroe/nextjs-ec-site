@@ -74,6 +74,11 @@ export default function UserProfileClient({ initialProfile }: UserProfileClientP
   const [orders, setOrders] = useState<Order[]>(initialProfile.orders);
   const [user, setUser] = useState<User | null>(initialProfile.user);
   const { data: session, status, update } = useSession();
+
+  useEffect(() => {
+    setOrders(initialProfile.orders);
+    setUser(initialProfile.user);
+  }, [initialProfile]);
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);

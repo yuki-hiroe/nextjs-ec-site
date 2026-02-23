@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import ProductCard from "@/components/ProductCard";
 
 type Product = {
   id: string;
@@ -11,6 +11,7 @@ type Product = {
   tagline: string;
   badges: string[];
   image: string;
+  stock: number;
 };
 
 export const metadata: Metadata = {
@@ -38,6 +39,7 @@ async function getProducts(): Promise<Product[]> {
         tagline: true,
         badges: true,
         image: true,
+        stock: true,
       },
     });
     
@@ -65,6 +67,7 @@ async function getProducts(): Promise<Product[]> {
         tagline: product.tagline || "",
         badges: badges,
         image: product.image,
+        stock: product.stock ?? 0,
       };
     });
   } catch (error) {
@@ -100,59 +103,20 @@ export default async function ProductsPage() {
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {products.map((product) => (
-          <Link
+          <ProductCard
             key={product.id}
-            href={`/products/${product.slug}`}
-            className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
-          >
-            <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-slate-100">
-              <Image
-                src={product.image}
-                alt={product.name}
-                fill
-                className="object-cover transition-transform group-hover:scale-105"
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
-                unoptimized
-              />
-            </div>
-            <div className="mt-4 flex items-start justify-between gap-2">
-              <div className="flex flex-wrap gap-1">
-                {product.badges.map((badge) => (
-                  <span
-                    key={badge}
-                    className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600"
-                  >
-                    {badge}
-                  </span>
-                ))}
-              </div>
-              <span className="text-sm font-semibold text-slate-900">
-                ¥{formattedPrice(product.price)}
-              </span>
-            </div>
-            <h2 className="mt-3 text-lg font-semibold text-slate-900 group-hover:underline">
-              {product.name}
-            </h2>
-            <p className="mt-2 line-clamp-2 text-sm text-slate-500">
-              {product.tagline}
-            </p>
-            <span className="mt-4 inline-flex items-center text-sm font-semibold text-slate-900 group-hover:underline">
-              詳細を見る
-              <svg
-                className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-            </span>
-          </Link>
+            product={{
+              id: product.id,
+              slug: product.slug,
+              name: product.name,
+              price: product.price,
+              tagline: product.tagline,
+              badges: product.badges,
+              image: product.image,
+            }}
+            initialStock={product.stock}
+            variant="list"
+          />
         ))}
       </div>
 

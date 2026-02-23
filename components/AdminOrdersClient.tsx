@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
 type OrderItem = {
@@ -54,6 +54,10 @@ type AdminOrdersClientProps = {
 export default function AdminOrdersClient({ initialOrders }: AdminOrdersClientProps) {
   const [orders, setOrders] = useState<Order[]>(initialOrders);
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    setOrders(initialOrders);
+  }, [initialOrders]);
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);

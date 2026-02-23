@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -25,6 +25,10 @@ export default function AdminStylistsPage( { initialStylists }: AdminStylistsCli
   const [stylists, setStylists] = useState<Stylist[]>(initialStylists || []);
   const [isLoading, setIsLoading] = useState(false);
   const [showInactive, setShowInactive] = useState(false);
+
+  useEffect(() => {
+    setStylists(initialStylists || []);
+  }, [initialStylists]);
 
   const fetchStylists = async (nextShowInactive: boolean = showInactive) => {
     try {
@@ -59,12 +63,7 @@ export default function AdminStylistsPage( { initialStylists }: AdminStylistsCli
         return;
       }
 
-      // ステータスを更新
-      setStylists((prev) =>
-        prev.map((stylist) =>
-          stylist.id === id ? { ...stylist, isActive: newStatus } : stylist
-        )
-      );
+      await fetchStylists(showInactive);
     } catch (error) {
       console.error("ステータス更新エラー:", error);
       alert("ステータスの更新に失敗しました");

@@ -95,6 +95,7 @@ export default function EditProductPage({ initialProduct }: AdminProductEditClie
         throw new Error(errorData.error || "商品の更新に失敗しました");
       }
 
+      router.refresh();
       router.push("/admin/products");
     } catch (error) {
       setError(error instanceof Error ? error.message : "商品の更新に失敗しました");

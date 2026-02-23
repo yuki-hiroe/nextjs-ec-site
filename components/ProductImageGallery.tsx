@@ -1,19 +1,34 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
+import { useInventory } from "@/contexts/InventoryContext";
 
 type ProductImageGalleryProps = {
   mainImage: string;
   images: string[];
   productName: string;
+  productId?: string;
+  initialStock?: number;
 };
 
 export default function ProductImageGallery({
   mainImage,
   images,
   productName,
+  productId,
+  initialStock,
 }: ProductImageGalleryProps) {
+  const { getStock, hasFetchedStock, refreshStock } = useInventory();
+  const currentStock = productId ? getStock(productId) : 1;
+  const stock = productId && hasFetchedStock(productId) ? currentStock : (initialStock ?? 1);
+  const isSoldOut = productId ? stock <= 0 : false;
+
+  useEffect(() => {
+    if (productId && !hasFetchedStock(productId) && initialStock !== undefined) {
+      refreshStock(productId);
+    }
+  }, [productId, hasFetchedStock, initialStock, refreshStock]);
   // 無効なドメイン（depop.com）のみを除外し、それ以外は許可
   // メイン画像が無効なドメインでない限り使用
   const validMainImage = mainImage && !mainImage.includes("depop.com") ? mainImage : (mainImage || "");
@@ -71,6 +86,13 @@ export default function ProductImageGallery({
             unoptimized
             onError={() => handleImageError(selectedImage)}
           />
+        )}
+        {isSoldOut && (
+          <div className="absolute inset-0 flex items-center justify-center bg-slate-900/60 backdrop-blur-[2px]">
+            <span className="rounded-full bg-white/90 px-8 py-3 text-base font-bold tracking-widest text-slate-900">
+              <span className="text-red-500 font-sm">SOLD OUT</span>
+            </span>
+          </div>
         )}
       </div>
 

@@ -206,6 +206,8 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           mainImage={product.image}
           images={product.images || []}
           productName={product.name}
+          productId={product.id}
+          initialStock={product.stock}
         />
 
         <div className="space-y-6">
