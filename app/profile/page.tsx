@@ -1,204 +1,392 @@
-import Link from "next/link";
-import Image from "next/image";
-import { getServerSession } from "next-auth"; 
-import { authOptions } from "@/lib/auth"; 
-import { prisma } from "@/lib/prisma"; 
-import { redirect } from "next/navigation";
+"use client";
 
-type Stylist = {
+import Link from "next/link";
+import { useSession } from "next-auth/react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+
+type EditFormData = {
+  name: string;
+  email: string;
+  image: string;
+  password: string;
+};
+
+type User = {
   id: string;
   name: string;
-  nameEn: string | null;
-  image: string | null;
-  bio: string;
-  specialties: string[];
-  averageRating: number;
-  ratingCount: number;
+  email: string;
+  image: string;
 };
-// マイページで相談したスタイリストを取得
-async function getProfileStylists(userId: string): Promise<Stylist[]> {
-  // 相談したスタイリストを取得
-  const inquiries = await prisma.inquiry.findMany({
-    where: {
-      userId,
-      stylistId: { not: null },
-      inquiryType: "styling",
-    },
-    include: {
-      stylist: {
-        select: {
-          id: true,
-          name: true,
-          nameEn: true,
-          image: true,
-          bio: true,
-          specialties: true,
-        },
-      },
-    },
-    orderBy: { createdAt: "desc" },
-  });
 
-  const uniqueStylistIds = new Set<string>();
-  const uniqueStylistlists: Array<{
+type OrderItem = {
+  id: string;
+  productId: string;
+  quantity: number;
+  price: string;
+  name: string;
+  product: {
     id: string;
     name: string;
-    nameEn: string | null;
-    image: string | null;
-    bio: string;
-    specialties: unknown;
-  }> = [];
+    image: string;
+    slug: string;
+  } | null;
+};
 
-  for (const inquiry of inquiries) {
-    if (inquiry.stylist && !uniqueStylistIds.has(inquiry.stylist.id)) {
-      uniqueStylistIds.add(inquiry.stylist.id);
-      uniqueStylistlists.push(inquiry.stylist);
+type Order = {
+  id: string;
+  orderNumber: string;
+  total: number;
+  shippingFee: number;
+  paymentMethod: string;
+  status: string;
+  lastName: string;
+  firstName: string;
+  email: string;
+  phone: string;
+  postalCode: string;
+  prefecture: string;
+  city: string;
+  address: string;
+  building: string | null;
+  notes: string | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+  } | null;
+  items: OrderItem[];
+  _count: {
+    items: number;
+  };
+};
+
+export default function ProfilePage() {
+  const [orders, setOrders] = useState<Order[]>([]);
+  const { data: session, status, update } = useSession();
+  const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [editFormData, setEditFormData] = useState<EditFormData>({
+    name: session?.user?.name || "",
+    email: session?.user?.email || "",
+    image: session?.user?.image || "",
+    password: "",
+  });
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (status === "loading") return;
+    if (status === "unauthenticated") {
+      router.push("/login?callbackUrl=/profile");
+      return;
     }
+
+    if (!session?.user?.id) return;
+
+    setIsLoading(true);
+    Promise.all([
+      fetch(`/api/users/${session.user.id}`).then((res) => res.json()),
+      fetch(`/api/orders?userId=${session.user.id}`).then((res) => res.json()),
+    ])
+      .then(([userData, ordersData]) => {
+        if (!userData?.error && userData) {
+          const formatted = { ...userData, image: userData.image || "" };
+          setUser(formatted);
+          setEditFormData({
+            name: userData.name || "",
+            email: userData.email || "",
+            image: userData.image || "",
+            password: "",
+          });
+        }
+        if (!ordersData?.error && Array.isArray(ordersData)) {
+          setOrders(ordersData);
+        }
+      })
+      .catch((err) => console.error("データ取得エラー:", err))
+      .finally(() => setIsLoading(false));
+  }, [session?.user?.id, status, router]);
+
+  const handleEditSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!session?.user?.id) return;
+
+    setIsSaving(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/users/${session.user.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: editFormData.name.trim(),
+          email: editFormData.email.trim(),
+          image: editFormData.image.trim(),
+          password: editFormData.password.trim(),
+        }),
+      });
+      
+      const data = await response.json();
+      if (!response.ok) {
+        alert(data?.error || "プロフィールの更新に失敗しました");
+        setIsSaving(false);
+        return;
+      }
+
+      // APIは更新後のユーザーオブジェクトを直接返す（data.user ではない）
+      const updateUser = data;
+      setUser({
+        id: updateUser.id,
+        name: updateUser.name || "",
+        email: updateUser.email || "",
+        image: updateUser.image || "",
+      });
+
+      await update({
+        ...session,
+        user: {
+          ...session?.user,
+          name: updateUser.name,
+          email: updateUser.email,
+          image: updateUser.image,
+        },
+      });
+
+      setIsEditing(false);
+      setEditFormData((prev) => ({...prev, password: ""}));
+      alert("プロフィールを更新しました");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "プロフィールの更新に失敗しました");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("ja-JP", {
+      style: "currency",
+      currency: "JPY",
+    }).format(price);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <p className="text-slate-600">読み込み中...</p>
+        </div>
+      </div>
+    );
   }
-
-  const stylistsWithRatings = await Promise.all(uniqueStylistlists.map(async (stylist) => {
-    const avgRating = await prisma.stylistRating.aggregate({
-      where: { stylistId: stylist.id },
-      _avg: { rating: true },
-      _count: { id: true },
-    });
-
-    const specialties = Array.isArray(stylist.specialties) 
-    ? stylist.specialties 
-    : typeof stylist.specialties === "string" 
-    ? JSON.parse(stylist.specialties) 
-    : [];
-
-    return {
-      ...stylist,
-      specialties,
-      averageRating: avgRating._avg.rating || 0,
-      ratingCount: avgRating._count.id || 0,
-    };
-  }));
-
-  return stylistsWithRatings;
-}
-
-export default async function ProfilePage() {
-  const session = await getServerSession(authOptions);
-
-  if (!session?.user?.id) {
-    redirect("/login");
-  }
-
-  const stylists = await getProfileStylists(session.user.id);
-
+  
   return (
     <div className="space-y-10">
-      <nav className="text-sm text-slate-500">
-        <Link href="/" className="hover:text-slate-900">
-          Home
-        </Link>
-        <span className="mx-2">/</span>
-        <span className="text-slate-900">マイページ</span>
-      </nav>
-
       <div>
-        <p className="text-sm uppercase tracking-[0.3em] text-slate-500">Profile</p>
-        <h1 className="mt-2 text-3xl font-semibold text-slate-900">マイページ</h1>
-        <p className="mt-3 text-slate-600">
-          あなたが相談したスタイリスト一覧を確認できます
-        </p>
+        <nav className="mb-6 text-sm text-slate-500">
+          <Link href="/" className="hover:text-slate-900">
+            Home
+          </Link>
+          <span className="mx-2">/</span>
+          <span className="text-slate-900">Profile</span>
+        </nav>
+        <div>
+          <p className="text-sm uppercase tracking-[0.3em] text-slate-500">
+            Profile
+          </p>
+          <h1 className="mt-2 text-3xl font-semibold text-slate-900">
+            {(user?.name ?? session?.user?.name ?? "")}さんのプロフィール
+          </h1>
+          <p className="mt-3 text-slate-600">
+            あなたのプロフィールを編集することができます。
+          </p>
+        </div>
       </div>
+      {/* プロフィール情報 */}
+      <div className="rounded-3xl border border-slate-200 bg-white p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-slate-900">プロフィール情報</h2>
+          {!isEditing && (
+            <button
+              onClick={() => {
+                setEditFormData({
+                  name: user?.name || session?.user?.name || "",
+                  email: user?.email || session?.user?.email || "",
+                  image: user?.image || session?.user?.image || "",
+                  password: "",
+                });
+                setIsEditing(true);
+              }}
+              className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:border-slate-900 cursor-pointer"
+            >
+              編集
+            </button>
+          )}
+        </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {stylists.length === 0 ? (
-          <div className="col-span-full rounded-3xl border border-slate-200 bg-white p-12 text-center">
-            <p className="text-slate-600">まだ相談したスタイリストがありません</p>
-            <Link
-              href="/stylists"
-              className="mt-4 inline-block text-sm font-semibold text-slate-900 hover:underline"
-            >
-              スタイリストを探す
-            </Link>
-          </div>
-        ) : (
-          stylists.map((stylist) => (
-            <Link
-              key={stylist.id}
-              href={`/stylists/${stylist.id}`}
-              className="group rounded-3xl border border-slate-200 bg-white p-6 transition hover:-translate-y-1 hover:shadow-lg"
-            >
-              <div className="flex items-start gap-4">
-                {stylist.image && stylist.image.trim() !== "" && stylist.image.startsWith("http") ? (
-                  <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-full bg-slate-100">
-                    <Image
-                      src={stylist.image}
-                      alt={stylist.name || "スタイリスト"}
-                      fill
-                      className="object-cover"
-                      sizes="80px"
-                    />
-                  </div>
-                ) : (
-                  <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-full bg-slate-200 text-2xl font-semibold text-slate-600">
-                    {(stylist.name || "S").charAt(0).toUpperCase()}
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-semibold text-slate-900 group-hover:text-slate-600 transition">
-                    {stylist.name || "スタイリスト"}
-                  </h3>
-                  {stylist.nameEn && stylist.nameEn.trim() !== "" && (
-                    <p className="mt-1 text-sm text-slate-500">{stylist.nameEn}</p>
-                  )}
-                  {stylist.averageRating > 0 && (
-                    <div className="mt-2 flex items-center gap-2">
-                      <div className="flex items-center">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <svg
-                            key={star}
-                            className={`h-4 w-4 ${
-                              star <= Math.round(stylist.averageRating)
-                                ? "text-amber-400"
-                                : "text-slate-300"
-                            }`}
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                          </svg>
-                        ))}
-                      </div>
-                      <span className="text-xs font-semibold text-slate-900">
-                        {stylist.averageRating.toFixed(1)}
-                      </span>
-                      <span className="text-xs text-slate-500">
-                        ({stylist.ratingCount}件)
-                      </span>
-                    </div>
-                  )}
-                  <p className="mt-2 line-clamp-2 text-sm text-slate-600">{stylist.bio || ""}</p>
-                  {Array.isArray(stylist.specialties) && stylist.specialties.length > 0 && (
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {stylist.specialties.slice(0, 2).map((specialty, index) => (
-                        <span
-                          key={index}
-                          className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-700"
-                        >
-                          {specialty}
-                        </span>
-                      ))}
-                      {stylist.specialties.length > 2 && (
-                        <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-700">
-                          +{stylist.specialties.length - 2}
-                        </span>
-                      )}
-                    </div>
-                  )}
+        {!isEditing ? (
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            {(user?.image ?? session?.user?.image) && (
+              <div className="sm:col-span-2">
+                <p className="text-sm text-slate-600 mb-2">プロフィール画像</p>
+                <div className="relative h-32 w-32 overflow-hidden rounded-full bg-slate-100">
+                  <img
+                    src={user?.image ?? session?.user?.image ?? ""}
+                    alt={user?.name ?? session?.user?.name ?? ""}
+                    className="h-full w-full object-cover"
+                  />
                 </div>
               </div>
-            </Link>
-          ))
+            )}
+            <div>
+              <p className="text-sm text-slate-600">名前</p>
+              <p className="mt-1 font-medium text-slate-900">{user?.name ?? session?.user?.name ?? ""}</p>
+            </div>
+            <div>
+              <p className="text-sm text-slate-600">メールアドレス</p>
+              <p className="mt-1 font-medium text-slate-900">{user?.email ?? session?.user?.email ?? ""}</p>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleEditSubmit} className="mt-4 space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label htmlFor="edit-name" className="block text-sm font-medium text-slate-700 mb-2">
+                  名前 <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="edit-name"
+                  type="text"
+                  value={editFormData.name}
+                  onChange={(e) => setEditFormData((prev) => ({ ...prev, name: e.target.value }))}
+                  required
+                  className="w-full rounded-lg border border-slate-300 px-4 py-2 text-sm focus:border-slate-900 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label htmlFor="edit-email" className="block text-sm font-medium text-slate-700 mb-2">
+                  メールアドレス <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="edit-email"
+                  type="email"
+                  value={editFormData.email}
+                  onChange={(e) => setEditFormData((prev) => ({ ...prev, email: e.target.value }))}
+                  required
+                  className="w-full rounded-lg border border-slate-300 px-4 py-2 text-sm focus:border-slate-900 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="edit-image" className="block text-sm font-medium text-slate-700 mb-2">
+                プロフィール画像URL
+              </label>
+              <input
+                id="edit-image"
+                type="url"
+                value={editFormData.image}
+                onChange={(e) => setEditFormData((prev) => ({ ...prev, image: e.target.value }))}
+                className="w-full rounded-lg border border-slate-300 px-4 py-2 text-sm focus:border-slate-900 focus:outline-none"
+                placeholder="https://example.com/image.jpg"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="edit-password" className="block text-sm font-medium text-slate-700 mb-2">
+                パスワード変更
+              </label>
+              <input
+                id="edit-password"
+                type="password"
+                value={editFormData.password}
+                onChange={(e) => setEditFormData((prev) => ({ ...prev, password: e.target.value }))}
+                className="w-full rounded-lg border border-slate-300 px-4 py-2 text-sm focus:border-slate-900 focus:outline-none"
+                placeholder="変更する場合のみ入力"
+              />
+              <p className="mt-1 text-xs text-slate-500">パスワードを変更しない場合は空欄のままにしてください</p>
+            </div>
+
+            <div className="flex gap-4 pt-4">
+              <button
+                type="submit"
+                disabled={isSaving}
+                className="flex-1 rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50 cursor-pointer"
+              >
+                {isSaving ? "保存中..." : "保存"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsEditing(false);
+                  // フォームを元の値にリセット
+                  if (session?.user) {
+                    setEditFormData({
+                      name: session?.user?.name || "",
+                      email: session?.user?.email || "",
+                      image: session?.user?.image || "",
+                      password: "",
+                    });
+                  }
+                }}
+                className="flex-1 rounded-full border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-900 transition hover:border-slate-900 cursor-pointer"
+              >
+                キャンセル
+              </button>
+            </div>
+          </form>
         )}
       </div>
+      {/* 購入履歴を表示させる */}
+    <div className="rounded-3xl border border-slate-200 bg-white p-6">
+      <h2 className="text-lg font-semibold text-slate-900">
+        購入履歴({orders?.length ?? 0}件)
+        </h2>
+      <p className="mt-2 text-slate-600">すべての購入履歴を確認できます</p>
+      <div className="mt-4">
+        {orders.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-slate-600">購入履歴が見つかりません</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {orders.map((order) => (
+                <div key={order.id} className="rounded-lg border border-slate-200 p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm text-slate-500">
+                      注文日時: {new Date(order.createdAt).toLocaleString("ja-JP")}
+                    </p>
+                    <p className="font-medium text-slate-900">{formatPrice(order.total)}</p>
+                  </div>
+                  <div className="flex flex-wrap gap-4">
+                    {order.items.map((item: OrderItem) => (
+                      <div key={item.id} className="flex items-center gap-3">
+                        <img
+                          src={item.product?.image ?? ""}
+                          alt={item.product?.name ?? ""}
+                          className="w-16 h-16 object-cover rounded"
+                        />
+                        <div>
+                          <p className="font-medium text-slate-900">{item.name}</p>
+                          <p className="text-sm text-slate-600">
+                            {item.quantity}点 × {formatPrice(Number(String(item.price).replace(/[^\d.-]/g, "")) || 0)}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+      </div>
+    </div>
     </div>
   );
 }
-

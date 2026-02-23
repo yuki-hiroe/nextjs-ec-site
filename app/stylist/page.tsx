@@ -136,7 +136,7 @@ export default function StylistDashboardPage() {
     }
   };
 
-  const handleReply = async (inquiryId: string, inquiryEmail: string) => {
+  const handleReply = async (inquiryId: string, _inquiryEmail: string) => {
     const message = replyMessages[inquiryId];
     if (!message || !message.trim()) {
       alert("メッセージを入力してください");
