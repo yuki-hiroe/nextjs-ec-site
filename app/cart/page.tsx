@@ -228,13 +228,13 @@ export default function CartPage() {
             </div>
             <button
               onClick={handleCheckout}
-              className="mt-6 w-full rounded-full bg-slate-900 px-6 py-3 text-center text-sm font-semibold text-white transition hover:bg-slate-800"
+              className="mt-6 w-full rounded-full bg-slate-900 px-6 py-3 text-center text-sm font-semibold text-white transition hover:bg-slate-800 cursor-pointer"
             >
               レジに進む
             </button>
             <button
               onClick={clearCart}
-              className="mt-3 w-full text-center text-sm text-slate-500 hover:text-slate-900"
+              className="mt-3 w-full text-center text-sm text-slate-500 hover:text-slate-900 cursor-pointer"
             >
               カートを空にする
             </button>
