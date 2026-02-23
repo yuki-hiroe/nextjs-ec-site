@@ -28,9 +28,10 @@ export default function AdminTestimonialsPage({ initialTestimonials }: AdminTest
   const [filter, setFilter] = useState<"all" | "approved" | "pending">("all");
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
 
-  const fetchTestimonials = async () => {
+  const fetchTestimonials = async (statusOverride?: "all" | "approved" | "pending") => {
     try {
-      const statusParam = filter === "all" ? "" : `?status=${filter}`;
+      const statusToUse = statusOverride ?? filter;
+      const statusParam = statusToUse === "all" ? "" : `?status=${statusToUse}`;
       const response = await fetch(`/api/admin/testimonials${statusParam}`);
 
       if (!response.ok) {
@@ -39,10 +40,8 @@ export default function AdminTestimonialsPage({ initialTestimonials }: AdminTest
 
       const data = await response.json();
       setTestimonials(data);
-    //   setIsLoading(false);
     } catch (error) {
       console.error("お客様の声取得エラー:", error);
-    //   setIsLoading(false);
     }
   };
 
@@ -62,7 +61,7 @@ export default function AdminTestimonialsPage({ initialTestimonials }: AdminTest
         throw new Error(errorData.error || "更新に失敗しました");
       }
 
-      await fetchTestimonials();
+      await fetchTestimonials("all");
     } catch (error) {
       alert(error instanceof Error ? error.message : "更新に失敗しました");
     } finally {
@@ -86,13 +85,20 @@ export default function AdminTestimonialsPage({ initialTestimonials }: AdminTest
         throw new Error(errorData.error || "削除に失敗しました");
       }
 
-      await fetchTestimonials();
+      await fetchTestimonials("all");
     } catch (error) {
       alert(error instanceof Error ? error.message : "削除に失敗しました");
     } finally {
       setIsProcessing(null);
     }
   };
+
+  const displayedTestimonials =
+    filter === "all"
+      ? testimonials
+      : filter === "pending"
+        ? testimonials.filter((t) => !t.isApproved)
+        : testimonials.filter((t) => t.isApproved);
 
   if (isLoading) {
     return (
@@ -158,15 +164,15 @@ export default function AdminTestimonialsPage({ initialTestimonials }: AdminTest
       {/* お客様の声一覧 */}
       <div className="rounded-3xl border border-slate-200 bg-white p-6">
         <h2 className="text-lg font-semibold text-slate-900 mb-4">
-          お客様の声一覧 ({testimonials.length}件)
+          お客様の声一覧 ({displayedTestimonials.length}件)
         </h2>
-        {testimonials.length === 0 ? (
+        {displayedTestimonials.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-slate-600">お客様の声がありません</p>
           </div>
         ) : (
           <div className="space-y-4">
-            {testimonials.map((testimonial) => (
+            {displayedTestimonials.map((testimonial) => (
               <div
                 key={testimonial.id}
                 className={`rounded-2xl border p-6 ${
