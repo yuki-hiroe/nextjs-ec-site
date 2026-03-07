@@ -73,7 +73,7 @@ export default function StylistRatingForm({
       // フォームをリセット
       setRating(0);
       setComment("");
-
+      // 成功コールバックを実行
       if (onSuccess) {
         onSuccess();
       } else {

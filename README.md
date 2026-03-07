@@ -42,6 +42,7 @@
 - ✅ 注目アイテムの表示
 - ✅ シーン別コレクション閲覧
 - ✅ 注文履歴
+- ✅ 在庫切れ時のSOLD OUT表示・購入制御
 
 ### スタイリスト側
 - ✅ スタイリスト専用ダッシュボード
@@ -158,8 +159,9 @@
 
 ### パフォーマンス
 - Next.js App Routerの活用
-- Server ComponentsとClient Componentsの適切な使い分け
+- Server ComponentsとClient Componentsの責務分離（初期表示はServer、操作はClient）
 - Prismaによる型安全なDB操作とクエリ最適化
+- 在庫・プロフィール・管理画面の更新後データ同期（再取得/refresh）
 
 ### 開発効率
 - AIツール（Cursor, GitHub Copilot, Claude）の積極活用
@@ -198,15 +200,12 @@ npm run dev
 ### 環境変数
 ```env
 # Database
-DATABASE_URL="postgresql://postgres.xxmkatizftqbpenqesnn:watashihahiroedesu@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
-
-DIRECT_URL="postgresql://postgres.xxmkatizftqbpenqesnn:watashihahiroedesu@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres"
+DATABASE_URL="postgresql://<USER>:<PASSWORD>@<HOST>:6543/postgres?pgbouncer=true"
+DIRECT_URL="postgresql://<USER>:<PASSWORD>@<HOST>:5432/postgres"
 
 # NextAuth
 NEXTAUTH_URL="http://localhost:3000"
-# 本番環境
-NEXTAUTH_URL="https://nextjs-ec-site-cffg.vercel.app/profile"
-NEXTAUTH_SECRET=26TAUSh0o4dgbGK+mrU8LcaxLo7e6pwLH/6H0m0hfXs=
+NEXTAUTH_SECRET="<GENERATED_SECRET>"
 ```
 
 NEXTAUTH_SECRETは以下のコマンドで生成:
@@ -239,12 +238,12 @@ openssl rand -base64 32
 
 ## 🎯 今後の改善予定
 
-- [ ] 注文履歴表示機能（お客様側）
+- [ ] 外部決済サービス連携（Stripe等）
 - [ ] パフォーマンス最適化（画像最適化、キャッシング）
 - [ ] エラーハンドリングの強化
 - [ ] テストの実装（Jest, React Testing Library）
 - [ ] E2Eテスト（Playwright）
-- [ ] Vercelへのデプロイ
+- [ ] 監視・ログ基盤の強化（Sentry等）
 - [ ] 技術ブログ記事の執筆（Qiita）
 
 ## 🚀 デモ
