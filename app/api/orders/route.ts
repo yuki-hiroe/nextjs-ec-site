@@ -13,11 +13,18 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // 在庫チェック
+    const productIds = items.map((item: any) => item.id);
+    const products = await prisma.product.findMany({
+      where: {
+        id: {
+          in: productIds,
+        },
+      },
+      select: { id: true, stock: true, name: true },
+    });
+
     for (const item of items) {
-      const product = await prisma.product.findUnique({
-        where: { id: item.id },
-        select: { stock: true, name: true },
-      });
+      const product = products.find((p) => p.id === item.id);
 
       if (!product) {
         return NextResponse.json(
