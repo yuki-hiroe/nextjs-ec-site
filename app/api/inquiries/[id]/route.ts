@@ -16,7 +16,7 @@ export async function PATCH(
         { status: 401 }
       );
     }
-    if (session?.user?.role !== "admin") {
+    if (session?.user?.role !== "admin" && session?.user?.role !== "stylist") {
       return NextResponse.json(
         { error: "権限がありません" },
         { status: 403 }
