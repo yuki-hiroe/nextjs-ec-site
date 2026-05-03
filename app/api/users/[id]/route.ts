@@ -9,10 +9,32 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) { 
   try {
-   const  { id } = await params;
+    const { id } = await params;
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user || !session.user.id) {
+      return NextResponse.json(
+        { error: "ログインが必要です" },
+        { status: 401 }
+      );
+    }
 
    const user = await prisma.user.findUnique({
     where: { id },
+    select: {
+        id: true,
+        name: true,
+        lastName: true,
+        firstName: true,
+        email: true,
+        emailVerified: true,
+        phone: true,
+        isSuspended: true,
+        suspendedAt: true,
+        image: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+    }
    });
 
    if (!user) {
@@ -38,11 +60,11 @@ export async function PATCH(
     try{
         const { id } = await params;
         const session = await getServerSession(authOptions);
-        if (!session?.user || session.user.id !== id || session.user.role !== "user") {
-            return NextResponse.json(
-                { error: "認証が必要です。自分のプロフィールのみ編集できます。" },
-                { status: 401 }
-            );
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "ログインが必要です" }, { status: 401 });
+        }
+        if (session.user.id !== id || session.user.role !== "user") {
+            return NextResponse.json({ error: "権限がありません" }, { status: 403 });
         }
         const body = await request.json();
         const { name, email, image, password } = body;
@@ -59,6 +81,20 @@ export async function PATCH(
             }
             updateData.email = trimmedEmail;
         }
+
+        //重複チェック : 同じ email を持つ別ユーザーがいないか確認
+        if (updateData.email) {
+            const existing = await prisma.user.findUnique({
+                where: { email: updateData.email },
+                select: { id: true },
+            });
+            if (existing && existing.id !== id) {
+                return NextResponse.json(
+                    { error: "このメールアドレスは既に使用されています" },
+                    { status: 400 }
+                );
+            }
+        }
         if (image !== undefined) updateData.image = image;
         if (password !== undefined && String(password).trim() !== "") {
             updateData.password = await bcrypt.hash(String(password).trim(), 10);
@@ -66,6 +102,22 @@ export async function PATCH(
 
         const updatedUser = await prisma.user.update({
             where: { id },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                emailVerified: true,
+                lastName: true,
+                firstName: true,
+                phone: true,
+                role: true,
+                image: true,
+                isSuspended: true,
+                suspendedAt: true,
+                suspendedReason: true,
+                createdAt: true,
+                updatedAt: true,
+            },
             data: updateData,
         });
         
