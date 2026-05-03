@@ -52,7 +52,7 @@ export async function PATCH(
     if (!session?.user || session.user.role !== "stylist" || session.user.id !== id) {
       return NextResponse.json(
         { error: "認証が必要です。自分のプロフィールのみ編集できます。" },
-        { status: 401 }
+        { status: 403 }
       );
     }
     const body = await request.json();
