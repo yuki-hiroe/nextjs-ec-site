@@ -32,6 +32,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!inquiryId) {
+      return NextResponse.json(
+        { error: "問い合わせIDが必要です" },
+        { status: 400 }
+      );
+    }
+
     // スタイリストの存在確認
     const stylist = await prisma.stylist.findUnique({
       where: { id: stylistId },
@@ -44,25 +51,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 既存の評価を確認
-    const ratingResult = await prisma.stylistRating.upsert({
+    // 問い合わせの所有者と対象スタイリストを検証
+    const inquiry = await prisma.inquiry.findFirst({
       where: {
-        stylistId_userId: {
-          stylistId,
-          userId: session.user.id,
-        },
+        id: inquiryId,
+        userId: session.user.id,
+        stylistId,
       },
-      update: {
-        rating,
-        comment: comment || null,
-        inquiryId: inquiryId || null,
-      }, 
-      create: {
+      select: { id: true },
+    });
+
+    if (!inquiry) {
+      return NextResponse.json(
+        { error: "この問い合わせに対する評価は投稿できません" },
+        { status: 403 }
+      );
+    }
+
+    // 同一問い合わせに対しては1回のみ評価可能
+    const ratingResult = await prisma.stylistRating.create({
+      data: {
         stylistId,
         userId: session.user.id,
-        rating, 
+        rating,
         comment: comment || null,
-        inquiryId: inquiryId || null,
+        inquiryId,
       },
     });
 
