@@ -136,8 +136,10 @@ async function getTestimonials(): Promise<Testimonial[]> {
 }
 
 export default async function HomePage() {
-  const featuredProducts = await getFeaturedProducts();
-  const testimonials = await getTestimonials();
+  const [featuredProducts, testimonials] = await Promise.all([
+    getFeaturedProducts(),
+    getTestimonials(),
+  ]);
 
   return (
     <div className="space-y-10">
