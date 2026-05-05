@@ -163,9 +163,12 @@ export default function InquiriesPage() {
 
   const markReplyAsRead = async (replyId: string) => {
     try {
-      await fetch(`/api/inquiries/replies/${replyId}/read`, {
+      const response = await fetch(`/api/inquiries/replies/${replyId}/read`, {
         method: "PATCH",
       });
+      if (!response.ok) {
+        throw new Error("返信の既読更新に失敗しました");
+      }
       // 返信を既読に更新
       setInquiries((prev) =>
         prev.map((inq) => ({
@@ -512,8 +515,8 @@ export default function InquiriesPage() {
                                   </Link>
                                 </p>
                               </div>
-                              {/* スタイリストへの評価フォーム */}
-                              {inquiry.stylist && inquiry.inquiryType === "styling" && user && (
+                              {/* スタイリストへの評価フォーム（未評価時のみ表示） */}
+                              {inquiry.stylist && inquiry.inquiryType === "styling" && user && !inquiry.hasRating && (
                                 <div className="rounded-lg border border-slate-200 bg-white p-4">
                                   <h4 className="text-sm font-semibold text-slate-900 mb-3">
                                     スタイリストを評価する
@@ -530,6 +533,16 @@ export default function InquiriesPage() {
                                       );
                                     }}
                                   />
+                                </div>
+                              )}
+                              {inquiry.stylist && inquiry.inquiryType === "styling" && user && inquiry.hasRating && (
+                                <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+                                  <p className="text-sm font-semibold text-emerald-900">
+                                    この相談への評価は投稿済みです。
+                                  </p>
+                                  <p className="mt-1 text-xs text-emerald-700">
+                                    1つの問い合わせにつき評価は1回のみ投稿できます。
+                                  </p>
                                 </div>
                               )}
                             </div>
