@@ -349,7 +349,7 @@ model StylistRating {
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   inquiry Inquiry? @relation(fields: [inquiryId], references: [id], onDelete: SetNull)
 
-  @@unique([stylistId, userId]) // 1ユーザーは1スタイリストに対して1回のみ評価可能
+  @@unique([userId, inquiryId]) // 同一ユーザーが同一問い合わせに対して複数回評価できない
   @@index([stylistId])
   @@index([userId])
   @@index([rating])
