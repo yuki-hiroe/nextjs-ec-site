@@ -16,7 +16,11 @@ export async function PATCH(
         { status: 401 }
       );
     }
-    if (session?.user?.role !== "admin" && session?.user?.role !== "stylist") {
+    if (
+      session?.user?.role !== "admin" &&
+      session?.user?.role !== "stylist" &&
+      session?.user?.role !== "user"
+    ) {
       return NextResponse.json(
         { error: "権限がありません" },
         { status: 403 }
@@ -24,6 +28,49 @@ export async function PATCH(
     }
 
     const { replyId } = await params;
+
+    const existingReply = await prisma.inquiryReply.findUnique({
+      where: { id: replyId },
+      include: {
+        inquiry: {
+          select: {
+            id: true,
+            userId: true,
+            email: true,
+            stylistId: true,
+          },
+        },
+      },
+    });
+
+    if (!existingReply) {
+      return NextResponse.json(
+        { error: "返信が見つかりません" },
+        { status: 404 }
+      );
+    }
+
+    // 既読操作の権限をチェック
+    if (session.user.role === "user") {
+      const canRead =
+        existingReply.inquiry.userId === session.user.id ||
+        (session.user.email && existingReply.inquiry.email === session.user.email);
+      if (!canRead) {
+        return NextResponse.json(
+          { error: "この返信を既読にする権限がありません" },
+          { status: 403 }
+        );
+      }
+    }
+
+    if (session.user.role === "stylist") {
+      if (existingReply.inquiry.stylistId !== session.user.id) {
+        return NextResponse.json(
+          { error: "この返信を既読にする権限がありません" },
+          { status: 403 }
+        );
+      }
+    }
 
     const reply = await prisma.inquiryReply.update({
       where: { id: replyId },
@@ -36,13 +83,6 @@ export async function PATCH(
     });
   } catch (error: any) {
     console.error("返信既読更新エラー:", error);
-    
-    if (error.code === "P2025") {
-      return NextResponse.json(
-        { error: "返信が見つかりません" },
-        { status: 404 }
-      );
-    }
 
     return NextResponse.json(
       { error: "返信の既読更新に失敗しました" },
