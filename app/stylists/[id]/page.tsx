@@ -4,7 +4,6 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import StylistRatingForm from "@/components/StylistRatingForm";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -130,22 +129,7 @@ export default async function StylistProfilePage({ params }: Props) {
     ? JSON.parse(stylistData.specialties)
     : [];
 
-  // ユーザーが既に評価しているか確認
-  let userRating = null;
-  if (session?.user?.id && prisma.stylistRating) {
-    try {
-      userRating = await prisma.stylistRating.findUnique({
-        where: {
-          stylistId_userId: {
-            stylistId: id,
-            userId: session.user.id,
-          },
-        },
-      });
-    } catch (error) {
-      console.error("ユーザー評価取得エラー:", error);
-    }
-  }
+  // 評価投稿は問い合わせ単位のため、このページでは評価フォームを表示しない
 
   return (
     <div className="space-y-10">
@@ -297,50 +281,18 @@ export default async function StylistProfilePage({ params }: Props) {
 
         {/* 右側: 評価フォーム */}
         <div className="lg:col-span-1">
-          {session?.user ? (
-            userRating ? (
-              <div className="rounded-3xl border border-slate-200 bg-white p-6">
-                <h2 className="text-lg font-semibold text-slate-900 mb-4">あなたの評価</h2>
-                <div className="space-y-2">
-                  <div className="flex items-center">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <svg
-                        key={star}
-                        className={`h-5 w-5 ${
-                          star <= userRating.rating ? "text-amber-400" : "text-slate-300"
-                        }`}
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                      </svg>
-                    ))}
-                  </div>
-                  {userRating.comment && (
-                    <p className="text-sm text-slate-700">{userRating.comment}</p>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="rounded-3xl border border-slate-200 bg-white p-6 sticky top-6">
-                <h2 className="text-lg font-semibold text-slate-900 mb-4">評価を投稿</h2>
-                <StylistRatingForm stylistId={id} />
-              </div>
-            )
-          ) : (
-            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6">
-              <h2 className="text-lg font-semibold text-slate-900 mb-4">評価を投稿</h2>
-              <p className="text-sm text-slate-600 mb-4">
-                評価を投稿するにはログインが必要です。
-              </p>
-              <Link
-                href="/login"
-                className="inline-block rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
-              >
-                ログインする
-              </Link>
-            </div>
-          )}
+          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6">
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">評価について</h2>
+            <p className="text-sm text-slate-600">
+              評価はお問い合わせ履歴から各相談ごとに1回のみ投稿できます。
+            </p>
+            <Link
+              href="/inquiries"
+              className="mt-4 inline-block rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
+            >
+              お問い合わせ履歴へ
+            </Link>
+          </div>
         </div>
       </div>
     </div>
