@@ -82,7 +82,7 @@ export default function UserProfileClient({ initialProfile }: UserProfileClientP
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [_error, setError] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState<EditFormData>({
     name: session?.user?.name || "",
     email: session?.user?.email || "",
