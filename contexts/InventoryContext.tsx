@@ -8,13 +8,13 @@ type Inventory = {
 };
 
 type InventoryContextType = {
-  inventory: Inventory;
-  getStock: (productId: string) => number;
-  hasFetchedStock: (productId: string) => boolean;
-  reduceStock: (productId: string, quantity: number) => Promise<boolean>;
-  checkStock: (productId: string, quantity: number) => boolean;
-  refreshStock: (productId: string) => Promise<void>;
-  isLoading: boolean;
+  inventory: Inventory; // 在庫情報
+  getStock: (productId: string) => number; // 在庫を取得
+  hasFetchedStock: (productId: string) => boolean; // 在庫情報を取得済みか
+  reduceStock: (productId: string, quantity: number) => Promise<boolean>; // 在庫を減らす
+  checkStock: (productId: string, quantity: number) => boolean; // 在庫を確認
+  refreshStock: (productId: string) => Promise<void>; // 在庫を更新
+  isLoading: boolean; // ローディング状態
 };
 
 const InventoryContext = createContext<InventoryContextType | undefined>(undefined);
