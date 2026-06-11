@@ -27,6 +27,10 @@ export const authOptions: NextAuthOptions = {
           throw new Error("メールアドレスまたはパスワードが正しくありません");
         }
 
+        if (user.isSuspended) {
+          throw new Error("アカウントが一時停止されています");
+        }
+
         if (!user.password) {
           throw new Error("パスワードが設定されていません");
         }
