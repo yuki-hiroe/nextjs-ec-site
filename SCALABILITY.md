@@ -1,620 +1,127 @@
-# スケーラビリティ対策まとめ
+# スケーラビリティの現状と改善候補
 
-## 概要
+## この文書の位置付け
 
-このプロジェクトのスケーラビリティ対策の現状と改善提案をまとめます。
+現時点のコードで確認できる実装と、今後の改善候補を分けて記録する。負荷試験や本番環境での性能測定は行っていない。「実装済み」は、性能や安全性が保証されているという意味ではない。
 
----
+確認したファイルは次のとおり。
 
-## ✅ 実装されている対策
+- `lib/prisma.ts`
+- `app/api/products/route.ts`
+- `app/api/admin/orders/route.ts`
+- `app/api/admin/audit-logs/route.ts`
+- `app/api/admin/stats/route.ts`
+- `app/inquiries/page.tsx`
+- `next.config.ts`
+- `package.json`
+- `prisma/schema.prisma`（インデックス定義の有無のみ）
 
-### 1. データベース接続プーリング
+これ以外のコードとの網羅的な照合はしていない。
 
-**実装箇所**: `lib/prisma.ts`
+## 確認できた実装
 
-```typescript
-// PrismaClientのシングルトンパターン
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
-};
+| 項目 | 現状 | 留意点 |
+| --- | --- | --- |
+| Prisma Client の再利用 | `lib/prisma.ts` で、開発時に `globalThis` 上のインスタンスを再利用する | ホットリロードによるインスタンス増加を抑える構成。サーバーレス全体の接続数制御や、接続プーリングの最適化を保証しない |
+| 商品一覧のページネーション | `app/api/products/route.ts` で `take: 20` と `skip` を使う。ページ番号は 0 始まり | `page` の不正値処理には改善余地がある |
+| 監査ログのページネーション | `app/api/admin/audit-logs/route.ts` で `take`、`skip`、`count` を使う | 上限は 1000 件。入力検証はあるが、それだけで負荷対策や DoS 対策として十分とは限らない |
+| 管理者向け注文一覧 | `app/api/admin/orders/route.ts` で `take: 100` を指定する | 最新 100 件の取得であり、ページ送りはない |
+| 集計処理 | `app/api/admin/stats/route.ts` で `Promise.all` を使う | 集計クエリを並列に開始する構成。応答時間の改善幅は未測定 |
+| 取得項目の指定 | Prisma の `select` で取得項目を限定している箇所がある | 転送量やメモリ使用量の改善幅は未測定 |
+| 画像設定 | `next.config.ts` で `images.unoptimized: true` | Next.js による画像最適化は無効。表示方法と配信元を含めて再検討が必要 |
+| 問い合わせの更新確認 | `app/inquiries/page.tsx` で定期的に返信を取得する | 取得頻度、通信量、データベース負荷は未測定 |
 
-export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
-    log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
-  });
+商品一覧にはページネーションがある。したがって、「商品一覧にページネーションがない」という旧文書の記述は誤りである。
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
-```
+### Prisma Client
 
-**効果**:
-- ✅ サーバーレス環境での接続プーリング最適化
-- ✅ 開発環境での接続再利用
-- ✅ 接続数の制御
+開発環境では `globalThis` に置いた `PrismaClient` を再利用し、ホットリロードのたびにインスタンスが増えるのを抑えている。Supabase への接続方式、接続プールの設定、本番環境の同時接続数は未確認である。このシングルトンだけを「サーバーレス環境の接続プーリング最適化」とは評価しない。
 
-**評価**: ⭐⭐⭐⭐⭐ 良好
+### インデックス
 
----
+`prisma/schema.prisma` にはインデックス定義がある。定義があることだけで検索が速くなるとは断定できない。対象クエリの実行計画とデータ件数を確認してから評価する。
 
-### 2. データベースインデックス
+### ページネーション
 
-**実装箇所**: `prisma/schema.prisma`
+- 商品一覧は `take: 20`、`skip: page * 20`。ページ番号は 0 始まり。
+- 監査ログは `limit` を 1〜1000 に制限し、`offset` を指定できる。
+- 管理者向け注文一覧は最新 100 件だけを取得し、次の 100 件を取る仕組みはない。
 
-主要な検索・フィルタリング用にインデックスを設定：
+### 集計と取得項目
 
-```prisma
-model User {
-  @@index([email])
-  @@index([role])
-  @@index([isSuspended])
-}
+`Promise.all` による集計の並列開始と、`select` による取得項目の指定はコード上で確認できる。クエリ時間、転送量、メモリ使用量の改善幅は測定していない。
 
-model Order {
-  @@index([orderNumber])
-  @@index([email])
-  @@index([status])
-  @@index([userId])
-}
+## 未実装・検討段階の改善案
 
-model AuditLog {
-  @@index([action])
-  @@index([targetType])
-  @@index([targetId])
-  @@index([targetEmail])
-  @@index([performedBy])
-  @@index([performedByEmail])
-  @@index([createdAt])
-}
-```
+### 1. API の入力検証と一覧取得
 
-**効果**:
-- ✅ クエリパフォーマンスの向上
-- ✅ 検索・フィルタリングの高速化
+- `page`、`limit`、`offset` の整数チェックと範囲チェックを揃える。
+- 管理者向け注文一覧にページネーションを入れる。
+- データ量が増えたとき、オフセット方式とカーソル方式を比較する。
+- ソート順の安定性と、同時更新時の表示の整合性を確認する。
 
-**評価**: ⭐⭐⭐⭐⭐ 良好
+### 2. レート制限とアクセス制御
 
----
+- 公開 API と認証 API について、アクセス頻度とリスクを確認する。
+- 必要なら、共有ストレージを使ったレート制限を検討する。
+- 取得件数の上限だけでは、DoS 対策として十分ではない。
+- 認証・認可と、操作対象データへのアクセス権は別に検証する。
 
-### 3. ページネーション（一部実装）
+導入も検証も未確認である。旧文書にある Upstash Redis のコードは実装済みではなく、参考案である。
 
-**実装箇所**: `app/api/admin/audit-logs/route.ts`
+### 3. キャッシュ
 
-```typescript
-const limit = Math.min(Math.max(parseInt(searchParams.get("limit") || "100") || 100, 1), 1000);
-const offset = Math.max(parseInt(searchParams.get("offset") || "0") || 0, 0);
+- 商品情報の更新頻度と、表示に求められる鮮度を整理する。
+- 利用中の Next.js のバージョンに対応するキャッシュ機構を調べる。
+- 更新時のキャッシュ無効化を含めて設計する。
+- 導入前後の応答時間を測定する。
 
-const [logs, total] = await Promise.all([
-  prisma.auditLog.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-    take: limit,    // ← ページネーション
-    skip: offset,   // ← ページネーション
-  }),
-  prisma.auditLog.count({ where }),
-]);
-```
+`React.cache` は、主に同一レンダー内の重複した計算や取得を避けるためのものであり、永続キャッシュとは別である。旧文書の ISR の例を、そのまま適用できるとは限らない。
 
-**効果**:
-- ✅ 大量データの分割取得
-- ✅ メモリ使用量の削減
+### 4. 画像配信
 
-**評価**: ⭐⭐⭐ 一部のみ実装（改善の余地あり）
+現在は `images.unoptimized: true` である。画像の取得元、サイズ、配信コスト、表示速度を確認したうえで、Next.js の画像最適化を使うかを判断する。設定値を変えるだけでは、表示の問題が解決するとは限らない。
 
----
+### 5. 問い合わせ返信の更新方法
 
-### 4. 並列処理（Promise.all）
+現在は、一定間隔の HTTP リクエストで返信を確認している。WebSocket と Server-Sent Events（SSE）は未実装で、技術検証もしていない。
 
-**実装箇所**: 複数のAPI Routes
+リアルタイム性が必要になった場合は、次を比較する。
 
-```typescript
-// app/api/admin/stats/route.ts
-const [products, orders, inquiries, stylists, pendingApplications, approvedTestimonials] = 
-  await Promise.all([
-    prisma.product.count(),
-    prisma.order.count(),
-    prisma.inquiry.count(),
-    prisma.stylist.count({ where: { isActive: true } }),
-    prisma.stylistApplication.count({ where: { status: "pending" } }),
-    prisma.testimonial.count({ where: { isApproved: true } }),
-  ]);
-```
-
-**効果**:
-- ✅ 複数クエリの並列実行
-- ✅ レスポンス時間の短縮
-
-**評価**: ⭐⭐⭐⭐ 良好
-
----
-
-### 5. 入力検証とリミット
-
-**実装箇所**: `app/api/admin/audit-logs/route.ts`
+- 現在のポーリング頻度の調整
+- 差分だけを返す API
+- SSE によるサーバーからの通知
+- WebSocket による双方向通信
 
-```typescript
-// limit と offset の検証（1-1000の範囲）
-const limit = Math.min(Math.max(parseInt(searchParams.get("limit") || "100") || 100, 1), 1000);
-const offset = Math.max(parseInt(searchParams.get("offset") || "0") || 0, 0);
-```
+比較では、通信量、認証・認可、接続管理、再接続、運用環境との相性を見る。WebSocket を入れれば必ず性能が上がる、という意味ではない。
 
-**効果**:
-- ✅ DoS攻撃の防止
-- ✅ データベース負荷の制御
+### 6. クエリと N+1 の確認
 
-**評価**: ⭐⭐⭐⭐ 良好（一部のみ実装）
+管理者向け注文一覧では、注文に紐づくユーザー、注文明細、商品を `include` で取得している。リレーションが深いことだけでは、N+1 クエリが起きているとは断定できない。Prisma が発行する SQL と、その実行回数を見て判断する。
 
----
-
-### 6. クエリ最適化（select指定）
+全件を取得してからランダムに抽出する処理がある場合は、対象件数と負荷を測ってから改善を検討する。`ORDER BY RANDOM()` も、件数が多いと高コストになり得るため、無条件には推奨しない。
 
-**実装箇所**: 複数のAPI Routes
+## 優先的に確認したい事項
 
-```typescript
-// 必要なフィールドのみ取得
-const products = await prisma.product.findMany({
-  select: {
-    id: true,
-    slug: true,
-    name: true,
-    price: true,
-    // 必要なフィールドのみ
-  },
-});
-```
-
-**効果**:
-- ✅ ネットワーク転送量の削減
-- ✅ メモリ使用量の削減
-
-**評価**: ⭐⭐⭐⭐ 良好
-
----
-
-## ⚠️ 改善が必要な対策
-
-### 1. ページネーションの不足
+1. **正確性。** README や設計文書と、最新コードの食い違い。
+2. **入力と権限。** 各 API のパラメータ検証、認証・認可、アクセスできるデータの範囲。
+3. **一覧表示。** 管理者向け注文一覧のページネーション。
+4. **測定。** API の応答時間、データベースのクエリ回数と実行時間、同時接続数。
+5. **運用。** エラー監視、画像配信、キャッシュ、レート制限。
+6. **更新通知。** 現在のポーリングの負荷を測ってから、代替方式を検討する。
 
-**問題箇所**: 複数のAPI Routes
+## 性能評価で記録したい指標
 
-#### 問題のあるAPI
+測定値はまだない。改善効果の数値や星評価は書かない。記録するときは、次を残す。
 
-```typescript
-// app/api/products/route.ts
-// ❌ 全件取得（ページネーションなし）
-const products = await prisma.product.findMany({
-  orderBy: { createdAt: "desc" },
-});
-
-// app/api/admin/orders/route.ts
-// ⚠️ 固定で100件のみ（ページネーションなし）
-const orders = await prisma.order.findMany({
-  take: 100,  // 固定値
-});
-```
-
-**推奨改善**:
-
-```typescript
-// ページネーションを追加
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const page = parseInt(searchParams.get("page") || "1");
-  const limit = Math.min(parseInt(searchParams.get("limit") || "20") || 20, 100);
-  const offset = (page - 1) * limit;
-
-  const [products, total] = await Promise.all([
-    prisma.product.findMany({
-      take: limit,
-      skip: offset,
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.product.count(),
-  ]);
-
-  return NextResponse.json({
-    products,
-    pagination: {
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit),
-    },
-  });
-}
-```
-
-**優先度**: 🔴 高
-
----
-
-### 2. キャッシュ戦略の不足
-
-**問題**: Next.jsのキャッシュ機能を活用していない
-
-#### 現在の実装
-
-```typescript
-// app/page.tsx
-// ❌ キャッシュなし（毎回データベースアクセス）
-async function getFeaturedProducts() {
-  const allProducts = await prisma.product.findMany({ ... });
-}
-
-// app/products/[slug]/page.tsx
-// ⚠️ force-dynamic（キャッシュ無効化）
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-```
-
-**推奨改善**:
-
-```typescript
-// 1. ISR（Incremental Static Regeneration）の活用
-export const revalidate = 3600; // 1時間ごとに再生成
-
-// 2. データフェッチのキャッシュ
-async function getFeaturedProducts() {
-  const products = await prisma.product.findMany({
-    // ...
-  });
-  return products;
-}
-
-// 3. React Cacheの活用
-import { cache } from 'react';
-
-const getCachedProducts = cache(async () => {
-  return await prisma.product.findMany({ ... });
-});
-```
-
-**優先度**: 🟡 中
-
----
-
-### 3. レート制限の未実装
-
-**問題**: APIエンドポイントにレート制限がない
-
-**推奨改善**:
-
-```typescript
-// lib/rate-limit.ts
-import { Ratelimit } from "@upstash/ratelimit";
-import { Redis } from "@upstash/redis";
-
-const ratelimit = new Ratelimit({
-  redis: Redis.fromEnv(),
-  limiter: Ratelimit.slidingWindow(10, "10 s"),
-});
-
-// app/api/products/route.ts
-export async function GET(request: Request) {
-  const ip = request.headers.get("x-forwarded-for") || "unknown";
-  const { success } = await ratelimit.limit(ip);
-  
-  if (!success) {
-    return NextResponse.json(
-      { error: "リクエストが多すぎます" },
-      { status: 429 }
-    );
-  }
-  
-  // ...
-}
-```
-
-**優先度**: 🟡 中
-
----
-
-### 4. 画像最適化の無効化
-
-**問題箇所**: `next.config.ts`
-
-```typescript
-images: {
-  unoptimized: true, // ❌ 画像最適化が無効
-}
-```
-
-**推奨改善**:
-
-```typescript
-images: {
-  unoptimized: false, // 画像最適化を有効化
-  formats: ['image/avif', 'image/webp'],
-  deviceSizes: [640, 750, 828, 1080, 1200],
-  imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-}
-```
-
-**優先度**: 🟡 中
-
----
-
-### 5. ポーリングの非効率性
-
-**問題箇所**: `app/inquiries/page.tsx`
-
-```typescript
-// ❌ 5秒ごとに全データを取得
-const checkIntervalRef = setInterval(checkNewReplies, 5000);
-```
-
-**推奨改善**:
-
-```typescript
-// 1. Server-Sent Events (SSE) の使用
-// 2. WebSocketの使用
-// 3. ポーリング間隔の最適化（30秒など）
-// 4. 差分取得APIの実装
-```
-
-**優先度**: 🟢 低（現状でも動作するが、改善の余地あり）
-
----
-
-### 6. 全件取得の問題
-
-**問題箇所**: 複数のAPI Routes
-
-```typescript
-// app/api/products/route.ts
-// ❌ 全商品を一度に取得
-const products = await prisma.product.findMany({ ... });
-
-// app/page.tsx
-// ❌ 全商品を取得してからランダムに4件選択
-const allProducts = await prisma.product.findMany({ ... });
-```
-
-**推奨改善**:
-
-```typescript
-// 1. データベース側でランダム取得
-const products = await prisma.$queryRaw`
-  SELECT * FROM "Product" 
-  ORDER BY RANDOM() 
-  LIMIT 4
-`;
-
-// 2. ページネーションの実装
-// 3. キャッシュの活用
-```
-
-**優先度**: 🟡 中
-
----
-
-### 7. N+1クエリ問題の可能性
-
-**問題**: リレーションを含むクエリでN+1が発生する可能性
-
-**確認が必要な箇所**:
-
-```typescript
-// app/api/admin/orders/route.ts
-const orders = await prisma.order.findMany({
-  include: {
-    user: { ... },
-    items: {
-      include: {
-        product: { ... },  // ← リレーションが深い
-      },
-    },
-  },
-});
-```
-
-**推奨改善**:
-
-```typescript
-// 1. selectで必要なフィールドのみ取得
-// 2. クエリの最適化
-// 3. データローダーパターンの導入
-```
-
-**優先度**: 🟡 中
-
----
-
-## 📊 スケーラビリティ対策の評価
-
-| 対策 | 実装状況 | 評価 | 優先度 |
-|------|---------|------|--------|
-| **データベース接続プーリング** | ✅ 実装済み | ⭐⭐⭐⭐⭐ | - |
-| **データベースインデックス** | ✅ 実装済み | ⭐⭐⭐⭐⭐ | - |
-| **ページネーション** | ⚠️ 一部のみ | ⭐⭐⭐ | 🔴 高 |
-| **並列処理（Promise.all）** | ✅ 実装済み | ⭐⭐⭐⭐ | - |
-| **入力検証とリミット** | ⚠️ 一部のみ | ⭐⭐⭐ | 🔴 高 |
-| **クエリ最適化（select）** | ✅ 実装済み | ⭐⭐⭐⭐ | - |
-| **キャッシュ戦略** | ❌ 未実装 | ⭐⭐ | 🟡 中 |
-| **レート制限** | ❌ 未実装 | ⭐ | 🟡 中 |
-| **画像最適化** | ❌ 無効化 | ⭐⭐ | 🟡 中 |
-| **リアルタイム更新** | ⚠️ ポーリング | ⭐⭐ | 🟢 低 |
-| **全件取得の回避** | ⚠️ 一部で問題 | ⭐⭐⭐ | 🟡 中 |
-
----
-
-## 🎯 推奨される改善の優先順位
-
-### 優先度: 高 🔴
-
-1. **ページネーションの実装**
-   - `/api/products` にページネーションを追加
-   - `/api/admin/orders` にページネーションを追加
-   - その他の一覧取得APIにページネーションを追加
-
-2. **入力検証とリミットの統一**
-   - すべてのAPI Routesでリミットを実装
-   - 入力検証の統一
-
-### 優先度: 中 🟡
-
-3. **キャッシュ戦略の実装**
-   - ISR（Incremental Static Regeneration）の活用
-   - React Cacheの活用
-   - データフェッチのキャッシュ
-
-4. **レート制限の実装**
-   - API Routesにレート制限を追加
-   - Upstash Redisなどの使用
-
-5. **全件取得の改善**
-   - データベース側でランダム取得
-   - 不要な全件取得を削除
-
-6. **画像最適化の有効化**
-   - `unoptimized: false` に変更
-   - 適切な画像サイズ設定
-
-### 優先度: 低 🟢
-
-7. **リアルタイム更新の改善**
-   - Server-Sent Events (SSE) の導入
-   - WebSocketの導入
-   - ポーリング間隔の最適化
-
----
-
-## 📝 実装例
-
-### 例1: ページネーション付きAPI
-
-```typescript
-// app/api/products/route.ts
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const page = parseInt(searchParams.get("page") || "1");
-  const limit = Math.min(parseInt(searchParams.get("limit") || "20") || 20, 100);
-  const offset = (page - 1) * limit;
-
-  const [products, total] = await Promise.all([
-    prisma.product.findMany({
-      take: limit,
-      skip: offset,
-      orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        slug: true,
-        name: true,
-        price: true,
-        image: true,
-      },
-    }),
-    prisma.product.count(),
-  ]);
-
-  return NextResponse.json({
-    products,
-    pagination: {
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit),
-      hasNext: page * limit < total,
-      hasPrev: page > 1,
-    },
-  });
-}
-```
-
-### 例2: キャッシュ付きデータ取得
-
-```typescript
-// app/page.tsx
-import { cache } from 'react';
-
-const getCachedFeaturedProducts = cache(async () => {
-  // データベースから取得
-  const products = await prisma.product.findMany({
-    select: { id: true, slug: true, name: true, price: true, image: true },
-  });
-  
-  // ランダムに4件選択
-  return products.sort(() => Math.random() - 0.5).slice(0, 4);
-});
-
-export const revalidate = 3600; // 1時間ごとに再生成
-
-export default async function HomePage() {
-  const featuredProducts = await getCachedFeaturedProducts();
-  // ...
-}
-```
-
-### 例3: レート制限付きAPI
-
-```typescript
-// lib/rate-limit.ts
-import { Ratelimit } from "@upstash/ratelimit";
-import { Redis } from "@upstash/redis";
-
-export const ratelimit = new Ratelimit({
-  redis: Redis.fromEnv(),
-  limiter: Ratelimit.slidingWindow(10, "10 s"),
-  analytics: true,
-});
-
-// app/api/products/route.ts
-export async function GET(request: Request) {
-  const ip = request.headers.get("x-forwarded-for") || "unknown";
-  const { success, limit, remaining } = await ratelimit.limit(ip);
-  
-  if (!success) {
-    return NextResponse.json(
-      { error: "リクエストが多すぎます。しばらく待ってから再試行してください。" },
-      { 
-        status: 429,
-        headers: {
-          "X-RateLimit-Limit": limit.toString(),
-          "X-RateLimit-Remaining": remaining.toString(),
-        },
-      }
-    );
-  }
-  
-  // 通常の処理
-  // ...
-}
-```
-
----
-
-## 🔍 パフォーマンス監視
-
-### 推奨される監視項目
-
-1. **データベースクエリ時間**
-   - スロークエリの検出
-   - クエリ数の監視
-
-2. **APIレスポンス時間**
-   - 各エンドポイントのレスポンス時間
-   - エラーレート
-
-3. **メモリ使用量**
-   - サーバーレス関数のメモリ使用量
-   - データベース接続数
-
-4. **キャッシュヒット率**
-   - キャッシュの効果測定
-
----
+- API の応答時間（中央値、p95）とエラー率
+- データベースのクエリ数、実行時間、接続数
+- 一覧取得時のデータ件数と転送量
+- 問い合わせの更新確認リクエストの頻度
+- 画像の転送量と表示速度
 
 ## まとめ
 
-### 現在の状態
+商品一覧と監査ログには、件数を限った取得がある。管理者向けの統計 API では `Promise.all` を使っている。一方で、接続プーリングの効果、インデックスによる性能改善、キャッシュ、レート制限、リアルタイム通信は、実装の有無と測定の有無を分けて評価する。
 
-- ✅ **良好**: データベース接続プーリング、インデックス、並列処理
-- ⚠️ **改善必要**: ページネーション、キャッシュ、レート制限
-- ❌ **未実装**: レート制限、画像最適化
-
-### 推奨アクション
-
-1. **即座に対応**: ページネーションの実装
-2. **短期**: キャッシュ戦略の実装、レート制限の追加
-3. **中期**: 画像最適化、リアルタイム更新の改善
-
-現在の実装は基本的なスケーラビリティ対策は実装されていますが、上記の改善を実施することで、より堅牢なスケーラブルなアプリケーションになります。
+この文書は、実装済みの成果を大きく見せるためではなく、今後の技術的な課題を整理するための記録である。
