@@ -1,8 +1,14 @@
 type LoginPendingOverlayProps = {
   show: boolean;
+  title?: string;
+  description?: string;
 };
 
-export default function LoginPendingOverlay({ show }: LoginPendingOverlayProps) {
+export default function LoginPendingOverlay({
+  show,
+  title = "ログインしています",
+  description = "認証が完了すると、自動で移動します",
+}: LoginPendingOverlayProps) {
   if (!show) return null;
 
   return (
@@ -15,8 +21,8 @@ export default function LoginPendingOverlay({ show }: LoginPendingOverlayProps) 
         className="h-9 w-9 animate-spin rounded-full border-2 border-slate-200 border-t-slate-900"
         aria-hidden="true"
       />
-      <p className="mt-4 text-sm font-semibold text-slate-900">ログインしています</p>
-      <p className="mt-1 text-xs text-slate-500">認証が完了すると、自動で移動します</p>
+      <p className="mt-4 text-sm font-semibold text-slate-900">{title}</p>
+      <p className="mt-1 text-xs text-slate-500">{description}</p>
     </div>
   );
 }

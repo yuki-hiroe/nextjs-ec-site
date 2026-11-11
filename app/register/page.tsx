@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
+import LoginPendingOverlay from "@/components/LoginPendingOverlay";
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -92,7 +93,12 @@ export default function RegisterPage() {
 
   return (
     <div className="mx-auto max-w-md">
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div className="relative rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+        <LoginPendingOverlay
+          show={isLoading}
+          title="登録しています"
+          description="登録が完了すると、自動で移動します"
+        />
         <div className="mb-8">
           <h1 className="text-2xl font-semibold text-slate-900">新規登録</h1>
           <p className="mt-2 text-sm text-slate-600">
@@ -103,7 +109,7 @@ export default function RegisterPage() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6" aria-busy={isLoading}>
           {error && (
             <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">
               {error}
@@ -121,7 +127,8 @@ export default function RegisterPage() {
               value={formData.email}
               onChange={handleChange}
               required
-              className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
+              className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 disabled:bg-slate-50"
+              disabled={isLoading}
               placeholder="example@email.com"
             />
           </div>
@@ -138,7 +145,8 @@ export default function RegisterPage() {
               onChange={handleChange}
               required
               minLength={6}
-              className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
+              className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 disabled:bg-slate-50"
+              disabled={isLoading}
               placeholder="6文字以上"
             />
           </div>
@@ -155,7 +163,8 @@ export default function RegisterPage() {
               onChange={handleChange}
               required
               minLength={6}
-              className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
+              className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 disabled:bg-slate-50"
+              disabled={isLoading}
               placeholder="パスワードを再入力"
             />
           </div>
@@ -171,7 +180,8 @@ export default function RegisterPage() {
               value={formData.name}
               onChange={handleChange}
               required
-              className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
+              className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 disabled:bg-slate-50"
+              disabled={isLoading}
               placeholder="山田 太郎"
             />
           </div>
@@ -179,7 +189,7 @@ export default function RegisterPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label htmlFor="lastName" className="block text-sm font-medium text-slate-700">
-                姓
+                Last Name
               </label>
               <input
                 id="lastName"
@@ -187,13 +197,14 @@ export default function RegisterPage() {
                 type="text"
                 value={formData.lastName}
                 onChange={handleChange}
-                className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
-                placeholder="山田"
+                className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 disabled:bg-slate-50"
+              disabled={isLoading}
+                placeholder="Yamada"
               />
             </div>
             <div>
               <label htmlFor="firstName" className="block text-sm font-medium text-slate-700">
-                名
+                First Name
               </label>
               <input
                 id="firstName"
@@ -201,8 +212,9 @@ export default function RegisterPage() {
                 type="text"
                 value={formData.firstName}
                 onChange={handleChange}
-                className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
-                placeholder="太郎"
+                className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 disabled:bg-slate-50"
+              disabled={isLoading}
+                placeholder="Taro"
               />
             </div>
           </div>
@@ -217,7 +229,8 @@ export default function RegisterPage() {
               type="tel"
               value={formData.phone}
               onChange={handleChange}
-              className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
+              className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 disabled:bg-slate-50"
+              disabled={isLoading}
               placeholder="090-1234-5678"
             />
           </div>
@@ -225,9 +238,19 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-wait"
           >
-            {isLoading ? "登録中..." : "新規登録"}
+            {isLoading ? (
+              <>
+                <span
+                  className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
+                  aria-hidden="true"
+                />
+                登録しています
+              </>
+            ) : (
+              "新規登録"
+            )}
           </button>
         </form>
       </div>
