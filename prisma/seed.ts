@@ -86,9 +86,9 @@ async function main() {
       shipping: "ご注文から2〜3営業日で発送。全国一律 ¥500／¥15,000以上で無料。",
       care: "柔らかい布で乾拭きし、定期的に専用クリームで保湿してください。",
       images: [
-        "https://image.t-fashion.jp/mackintoshlondonmens/images/goods/2306-G1F01005/z-2306-G1F01005_09.jpg",
         "https://cdn.ferragamo.com/wcsstore/FerragamoCatalogAssetStore/images/products/790386/790386_00_r20.jpg",
         "https://d2g420rz4bavii.cloudfront.net/itemimg/K80272/K80272-8075_01.jpg",
+        "https://tshop.r10s.jp/arknets/cabinet/styling/sdstyling/imgrc0110255456.jpg?fitin=720%3A720",
         "https://cdn.shop-list.com/res/up/shoplist/shp/__thum370__/silver-bullet/silver-bullet/cabinet/ca16/catn23-13-06.jpg",
       ],
       relatedSlugs: ["renaper-leather-treatment", "wood-suits-hunger"],
