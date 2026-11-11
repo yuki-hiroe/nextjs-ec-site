@@ -15,7 +15,7 @@ const collections: Collection[] = [
     title: "Everyday Essentials",
     slug: "everyday-essentials",
     description: "通勤・通学に使えるミニマルアイテムで、毎日を快適に過ごすためのコーディネート提案です。",
-    image: "https://vyde.io/wp-content/uploads/2018/06/Successful-Small-Business.jpg",
+    image: "https://kinarino.k-img.com/system/press_eye_catches/000/054/272/4d382c9a6efc7697bb85f36dd8614fb873520a64.jpeg?1643605312",
     coordinatesCount: 2,
   },
   {
