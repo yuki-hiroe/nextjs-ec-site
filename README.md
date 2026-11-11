@@ -18,10 +18,11 @@
 
 | カテゴリ | 技術 |
 |---------|------|
-| **Framework** | Next.js 15 (App Router) |
+| **Framework** | Next.js 16 (App Router) |
 | **Language** | TypeScript |
-| **Styling** | Tailwind CSS |
-| **Database** | PostgreSQL (Supabase) |
+| **UI** | React 19 |
+| **Styling** | Tailwind CSS 4 |
+| **Database** | PostgreSQL（ローカルは Docker、本番は Supabase も利用可能） |
 | **ORM** | Prisma |
 | **Authentication** | NextAuth.js |
 | **Password Hashing** | bcryptjs |
@@ -30,11 +31,11 @@
 ## ✨ 主な機能
 
 ### お客様側
-- ✅ 商品一覧・詳細・検索
+- ✅ 商品一覧・詳細
 - ✅ カート機能
 - ✅ お気に入り機能
 - ✅ 会員登録・ログイン（NextAuth.js）
-- ✅ 購入手続き
+- ✅ 購入手続き（注文の作成まで。外部決済は未連携）
 - ✅ メルマガ登録
 - ✅ スタイリスト相談・評価
 - ✅ 問い合わせ履歴機能
@@ -151,29 +152,29 @@
 ## 🔧 技術的な工夫
 
 ### セキュリティ
-- **NextAuth.js**による安全な認証（JWT, セッション管理）
-- **bcryptjs**によるパスワードハッシュ化（ソルトラウンド10）
-- **Prisma ORM**によるSQLインジェクション対策
-- **エラーメッセージの曖昧化**でブルートフォース攻撃を対策
-- クライアント・サーバー双方でのバリデーション
+- **NextAuth.js** による認証（JWT セッション）
+- **bcryptjs** によるパスワードハッシュ化（ソルトラウンド 10）
+- **Prisma** でクエリを組み立て、SQL を文字列結合しない
+- ログイン失敗時は、パスワード相違と未登録を同じ文言で返す
+- クライアントとサーバーの両方で入力を検証する
 
 ### パフォーマンス
-- Next.js App Routerの活用
-- Server ComponentsとClient Componentsの責務分離（初期表示はServer、操作はClient）
-- Prismaによる型安全なDB操作とクエリ最適化
-- 在庫・プロフィール・管理画面の更新後データ同期（再取得/refresh）
+- Next.js App Router を使う
+- 初期表示は Server Components、操作が必要な画面は Client Components に分ける
+- Prisma による型の付いたデータベース操作
+- 在庫・プロフィール・管理画面は、更新後に再取得する
 
 ### 開発効率
-- AIツール（Cursor, GitHub Copilot, Claude）の積極活用
+- AIツール（Cursor, Gemini, Claude）の積極活用
 - TypeScriptによる型安全性の確保
 - Prisma Studioによる直感的なデータ管理
-- 段階的な機能実装とテスト
+- 機能を段階的に実装する
 
 ## 🚀 セットアップ
 
 ### 必要な環境
 - Node.js 18以上
-- PostgreSQL（またはSupabaseアカウント）
+- Docker（ローカルの PostgreSQL を使う場合）
 
 ### インストール手順
 ```bash
@@ -184,34 +185,40 @@ cd nextjs-ec-site
 # 2. 依存関係をインストール
 npm install
 
-# 3. 環境変数を設定
-cp .env.example .env
-# .env ファイルを編集（DATABASE_URL, NEXTAUTH_SECRETなど）
+# 3. プロジェクト直下に .env を作成する（内容は下記）
 
-# 4. データベースのマイグレーション
+# 4. ローカルの PostgreSQL を起動する
+docker compose up -d
+
+# 5. マイグレーションとシード
 npx prisma migrate dev
+npx prisma db seed
 
-# 5. 開発サーバーを起動
+# 6. 開発サーバーを起動
 npm run dev
 ```
 
-ブラウザで http://localhost:3000 を開く
+ブラウザで http://localhost:3000 を開く。
 
 ### 環境変数
-```env
-# Database
-DATABASE_URL="postgresql://<USER>:<PASSWORD>@<HOST>:6543/postgres?pgbouncer=true"
-DIRECT_URL="postgresql://<USER>:<PASSWORD>@<HOST>:5432/postgres"
 
-# NextAuth
+ローカルの Docker Postgres では、`DATABASE_URL` と `DIRECT_URL` に同じ接続文字列を書きます。Prisma のスキーマが両方を必須にしているためです。
+
+```env
+DATABASE_URL="postgresql://intercambio:intercambio_password@localhost:5432/intercambio_db"
+DIRECT_URL="postgresql://intercambio:intercambio_password@localhost:5432/intercambio_db"
+
 NEXTAUTH_URL="http://localhost:3000"
 NEXTAUTH_SECRET="<GENERATED_SECRET>"
 ```
 
-NEXTAUTH_SECRETは以下のコマンドで生成:
+`NEXTAUTH_SECRET` は次のコマンドで生成します。これがないと、ログイン後のセッションが保持されません。
+
 ```bash
 openssl rand -base64 32
 ```
+
+Supabase を使う場合は、プーラー経由の URL を `DATABASE_URL`、直接接続の URL を `DIRECT_URL` にします。本番の URL は、ホスティング側の環境変数に公開サイトの `https` URL を設定します。ローカルの `.env` はデプロイされません。
 
 ## 📝 開発経緯
 
@@ -220,11 +227,11 @@ openssl rand -base64 32
 一貫した開発経験を積むことを目的に開発しました。
 
 ### 開発期間
-2024年11月〜現在進行中（約1ヶ月）
+2025年9月〜2025年11月（約2ヶ月）
 
 ### 開発プロセス
 1. **要件定義**: 一般的なECサイト機能に加え、独自の価値提案を検討
-2. **技術選定**: Next.js 15 (App Router), Prisma, NextAuth.jsを採用
+2. **技術選定**: 開発当時は Next.js 15 (App Router)、Prisma、NextAuth.js を採用。その後 Next.js 16 に更新
 3. **DB設計**: Prismaでリレーションとインデックスを設計
 4. **段階的実装**: お客様側→管理者側→認証の順で実装
 5. **AIツール活用**: Cursorで効率化しつつ、コードは必ず理解・検証
@@ -239,12 +246,8 @@ openssl rand -base64 32
 ## 🎯 今後の改善予定
 
 - [ ] 外部決済サービス連携（Stripe等）
-- [ ] パフォーマンス最適化（画像最適化、キャッシング）
 - [ ] エラーハンドリングの強化
 - [ ] テストの実装（Jest, React Testing Library）
-- [ ] E2Eテスト（Playwright）
-- [ ] 監視・ログ基盤の強化（Sentry等）
-- [ ] 技術ブログ記事の執筆（Qiita）
 
 ## 🚀 デモ
 
@@ -256,22 +259,31 @@ openssl rand -base64 32
 
 お試しいただく際は、以下のアカウントをご利用ください：
 
+`npx prisma db seed` で作成されます。
+
 **一般ユーザー:**
-- メールアドレス: `sample@intercambio.com`
-- パスワード: `sample123`
+- メールアドレス: `test@example.com`
+- パスワード: `test123`
 
 **管理者:**
-- メールアドレス: `admin@example.com`
+- メールアドレス: `admin@intercambio.com`
 - パスワード: `admin123`
 
-※ テスト用のアカウントです。自由にお試しください。
+**スタイリスト（パスワードは共通）:**
+- `kento@intercambio.com`
+- `naoki@intercambio.com`
+- `shota@intercambio.com`
+- `kazuaki@intercambio.com`
+- パスワード: `stylist123`
+
+テスト用のアカウントです。本番のデモ環境で使うには、そのデータベースに対してもシードを実行してください。
 
 ## 👤 作者
 
 Yuki Hiroe
 - GitHub: [@yuki-hiroe](https://github.com/yuki-hiroe)
 - プログラミングスクール在学中
-- 2027年新卒入社を目指して就職活動中
+- エンジニアへの転職を目指して活動中
 
 ## 📄 ライセンス
 

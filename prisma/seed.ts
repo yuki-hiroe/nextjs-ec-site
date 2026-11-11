@@ -113,7 +113,7 @@ async function main() {
         { label: "素材", value: "レザー" },
       ],
       shipping: "ご注文から2〜3営業日で発送。全国一律 ¥500／¥15,000以上で無料。",
-      care: "手洗いで使用してください。空の容器にゴミを捨てないようにご注意ください。",
+      care: "手洗いで使用してください。空の容器はリサイクルできます。",
       images: [
         "https://m.media-amazon.com/images/I/71QM7h8rOzL._AC_UF894,1000_QL80_.jpg",
         "https://antry.co.jp/cdn/shop/products/21MN088-00_700x700.jpg?v=1685265085",
@@ -142,7 +142,7 @@ async function main() {
         { label: "素材", value: "木" },
       ],
       shipping: "ご注文から2〜3営業日で発送。全国一律 ¥500／¥15,000以上で無料。",
-      care: "ぶん投げないでください。不要になったらリサイクルできます。",
+      care: "投げないでください。不要になったらリサイクルできます。",
       images: [
         "https://www.spacegeneral.co.nz/cdn/shop/files/Wooden-Coat-Hanger-Natural-Set-of-20-2_1080x.jpg?v=1717630650",
         "https://thumbs.dreamstime.com/b/row-men-s-suits-hanger-wooden-background-selective-focus-view-copy-space-142253518.jpg",
@@ -251,6 +251,23 @@ async function main() {
   console.log(`   - パスワード: stylist123`);
 
   console.log(`✅ ${createdStylists.length}件のスタイリストデータをシードしました`);
+
+  // テスト用ユーザーを作成
+  const testUserPassword = await bcrypt.hash("test123", 10);
+  const testUser = await prisma.user.upsert({
+    where: { email: "test@example.com" },
+    update: {
+      password: testUserPassword,
+    },
+    create: {
+      email: "test@example.com",
+      password: testUserPassword,
+      name: "テストユーザー",
+      role: "user",
+    },
+  });
+
+  console.log(`✅ テスト用ユーザーを作成しました (email: test@example.com, password: test123)`);
 
   // 管理者アカウントを作成（既に存在する場合はスキップ）
   const adminPassword = await bcrypt.hash("admin123", 10);
