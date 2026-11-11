@@ -4,6 +4,7 @@ import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import LoginPendingOverlay from "@/components/LoginPendingOverlay";
 
 export default function StylistLoginPage() {
   const [email, setEmail] = useState("");
@@ -36,14 +37,14 @@ export default function StylistLoginPage() {
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "ログインに失敗しました");
-    } finally {
       setIsLoading(false);
     }
   };
 
   return (
     <div className="mx-auto max-w-md">
-      <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div className="relative rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+        <LoginPendingOverlay show={isLoading} />
         <div className="mb-8">
           <h1 className="text-2xl font-semibold text-slate-900">スタイリストログイン</h1>
           <p className="mt-2 text-sm text-slate-600">
@@ -57,7 +58,7 @@ export default function StylistLoginPage() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6" aria-busy={isLoading}>
           {error && (
             <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">
               {error}
@@ -72,9 +73,10 @@ export default function StylistLoginPage() {
               type="email"
               id="email"
               required
+              disabled={isLoading}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
+              className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 disabled:bg-slate-50"
               placeholder="stylist@example.com"
             />
           </div>
@@ -87,9 +89,10 @@ export default function StylistLoginPage() {
               type="password"
               id="password"
               required
+              disabled={isLoading}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
+              className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 disabled:bg-slate-50"
               placeholder="••••••••"
             />
           </div>
@@ -97,9 +100,19 @@ export default function StylistLoginPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-wait"
           >
-            {isLoading ? "ログイン中..." : "ログイン"}
+            {isLoading ? (
+              <>
+                <span
+                  className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
+                  aria-hidden="true"
+                />
+                ログインしています
+              </>
+            ) : (
+              "ログイン"
+            )}
           </button>
         </form>
 
